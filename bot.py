@@ -14,25 +14,37 @@ def get_shabbat_times():
         "אילת": "295277"
     }
     
-    message = "🕯️ **זמני כניסת ויציאת שבת:**\n"
+    try:
+        # שליפת נתונים כללית כדי לקבל את שם הפרשה
+        parsha_url = "https://www.hebcal.com/shabbat?cfg=json&geonameid=281184"
+        res_general = requests.get(parsha_url).json()
+        parsha_name = next(i['hebrew'] for i in res_general['items'] if i['category'] == 'parashat')
+    except:
+        parsha_name = "פרשת השבוע"
+
+    # עיצוב ההודעה
+    message = f"📖 *__פרשת {parsha_name}__*\n\n"
+    message += "🕯️ *זמני כניסת ויציאת שבת* 🕯️\n"
+    message += "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n"
     
     for city_name, city_id in cities.items():
         try:
             url = f"https://www.hebcal.com/shabbat?cfg=json&geonameid={city_id}&m=50"
             res = requests.get(url).json()
             
-            # שליפת זמנים מתוך ה-JSON של Hebcal
             items = res['items']
             candle_lighting = next(i['title'] for i in items if i['category'] == 'candles')
             havdalah = next(i['title'] for i in items if i['category'] == 'havdalah')
             
-            # ניקוי הטקסט (לוקח רק את השעה)
             c_time = candle_lighting.split(": ")[1]
             h_time = havdalah.split(": ")[1]
             
-            message += f"\n📍 **{city_name}:** {c_time} | {h_time}"
+            # עיצוב מיושר עם נקודות
+            message += f"📍 *{city_name:.<10}* 🕯️ `{c_time}`  •  ✨ `{h_time}`\n"
         except:
             continue
+            
+    message += "\n*שבת שלום ומבורך!* ❤️"
     return message
 
 def job():
