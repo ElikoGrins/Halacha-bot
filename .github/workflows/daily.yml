@@ -1,24 +1,27 @@
-name: Daily Halachot Bot
+name: Daily Halacha Bot
 
 on:
+  workflow_dispatch: # זה מה שיוצר את הכפתור להרצה ידנית
   schedule:
-    - cron: '0 5 * * *'
-  workflow_dispatch:
+    - cron: '0 6 * * *' # שעה 08:00 בבוקר בישראל
 
 jobs:
-  run-bot:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install requests
 
       - name: Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         run: python bot.py
