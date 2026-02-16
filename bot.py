@@ -1,32 +1,28 @@
 import requests
-import time
-import schedule
 import os
+import random
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL = os.getenv("CHANNEL_ID")
 
-def send_message(text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    data = {
-        "chat_id": CHANNEL,
-        "text": text
-    }
-    requests.post(url, data=data)
-
 def job():
+    # בדיקה אם הקובץ קיים
+    if not os.path.exists("halachot.txt"):
+        print("קובץ halachot.txt לא נמצא!")
+        return
+
     with open("halachot.txt", "r", encoding="utf-8") as f:
-        lines = f.readlines()
+        lines = [line.strip() for line in f.readlines() if line.strip()]
 
     if len(lines) >= 2:
-        message = "📖 2 הלכות יומיות\n\n" + lines[0] + "\n" + lines[1]
-        send_message(message)
+        # בוחר 2 הלכות אקראיות
+        selected = random.sample(lines, 2)
+        message = f"📜 **הלכה יומית**\n\n1️⃣ {selected[0]}\n\n2️⃣ {selected[1]}"
+        
+        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        requests.post(url, data={"chat_id": CHANNEL, "text": message})
+    else:
+        print("אין מספיק הלכות בקובץ")
 
-        with open("halachot.txt", "w", encoding="utf-8") as f:
-            f.writelines(lines[2:])
-
-schedule.every().day.at("07:00").do(job)
-
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+if __name__ == "__main__":
+    job()
