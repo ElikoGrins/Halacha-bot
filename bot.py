@@ -1,76 +1,181 @@
-import requests
 import os
+import requests
 import random
-from datetime import datetime
+import datetime
+import json
+from PIL import Image, ImageDraw, ImageFont
+import arabic_reshaper
+from bidi.algorithm import get_display
 
-TOKEN = os.getenv("BOT_TOKEN")
-CHANNEL = os.getenv("CHANNEL_ID")
+# --- הגדרות ---
+TOKEN = os.environ.get("BOT_TOKEN")
+CHANNEL_ID = os.environ.get("CHANNEL_ID")
+CITIES = [
+    {"name": "ירושלים", "geonameid": "281184"},
+    {"name": "תל אביב", "geonameid": "293397"},
+    {"name": "חיפה", "geonameid": "294801"},
+    {"name": "באר שבע", "geonameid": "295530"},
+    {"name": "אילת", "geonameid": "295277"}
+]
 
+# --- פונקציות עזר לעברית ---
+def fix_text(text):
+    """מסדר עברית שתהיה קריאה מימין לשמאל בתמונה"""
+    if not text: return ""
+    reshaped_text = arabic_reshaper.reshape(text)
+    return get_display(reshaped_text)
+
+# --- פונקציות שבת ---
 def get_shabbat_times():
-    cities = {
-        "ירושלים": "281184",
-        "תל אביב": "293397",
-        "חיפה": "294801",
-        "אילת": "295277"
-    }
+    """מקבל את זמני השבת והפרשה"""
+    today = datetime.date.today()
+    # מוצא את התאריך של יום שישי הקרוב
+    friday = today + datetime.timedelta((4 - today.weekday()) % 7)
+    date_str = friday.strftime("%Y-%m-%d")
     
-    try:
-        # שליפת נתונים כללית כדי לקבל את שם הפרשה
-        parsha_url = "https://www.hebcal.com/shabbat?cfg=json&geonameid=281184"
-        res_general = requests.get(parsha_url).json()
-        parsha_name = next(i['hebrew'] for i in res_general['items'] if i['category'] == 'parashat')
-    except:
-        parsha_name = "פרשת השבוע"
-
-    # עיצוב ההודעה
-    message = f"📖 *__פרשת {parsha_name}__*\n\n"
-    message += "🕯️ *זמני כניסת ויציאת שבת* 🕯️\n"
-    message += "‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\n"
+    results = []
+    parasha_name = ""
     
-    for city_name, city_id in cities.items():
+    for city in CITIES:
+        url = f"https://www.hebcal.com/shabbat?cfg=json&geonameid={city['geonameid']}&date={date_str}&M=on"
         try:
-            url = f"https://www.hebcal.com/shabbat?cfg=json&geonameid={city_id}&m=50"
-            res = requests.get(url).json()
+            response = requests.get(url)
+            data = response.json()
             
-            items = res['items']
-            candle_lighting = next(i['title'] for i in items if i['category'] == 'candles')
-            havdalah = next(i['title'] for i in items if i['category'] == 'havdalah')
+            candles = ""
+            havdalah = ""
+            rabenu = "" # הכנה לרבנו תם אם תרצה בעתיד
             
-            c_time = candle_lighting.split(": ")[1]
-            h_time = havdalah.split(": ")[1]
+            for item in data["items"]:
+                if item["category"] == "candles":
+                    candles = item["title"].split(": ")[1]
+                elif item["category"] == "havdalah":
+                    havdalah = item["title"].split(": ")[1]
+                elif item["category"] == "parashat":
+                    parasha_name = item["hebrew"]
             
-            # עיצוב מיושר עם נקודות
-            message += f"📍 *{city_name:.<10}* 🕯️ `{c_time}`  •  ✨ `{h_time}`\n"
-        except:
-            continue
+            results.append({
+                "city": city["name"],
+                "candles": candles,
+                "havdalah": havdalah
+            })
+        except Exception as e:
+            print(f"Error fetching data for {city['name']}: {e}")
             
-    message += "\n*שבת שלום ומבורך!* ❤️"
-    return message
+    return parasha_name, results
 
-def job():
-    if not os.path.exists("halachot.txt"):
-        print("Missing halachot.txt")
-        return
+def create_shabbat_image(parasha, times):
+    """יוצר את התמונה המעוצבת"""
+    try:
+        img = Image.open("shabbat_bg.jpg")
+    except:
+        print("Error: shabbat_bg.jpg not found. Creating white background.")
+        img = Image.new('RGB', (1080, 1350), color='white')
 
-    # קריאת הלכות
-    with open("halachot.txt", "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
+    draw = ImageDraw.Draw(img)
+    W, H = img.size
+    
+    # טעינת הפונטים (במידה והקובץ קיים)
+    try:
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 90)
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 60)
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 45)
+    except:
+        font_title = font_text = font_logo = ImageFont.load_default()
 
-    if len(lines) >= 2:
-        selected = random.sample(lines, 2)
-        halacha_msg = f"📜 **2 הלכות יומיות:**\n\n1️⃣ {selected[0]}\n\n2️⃣ {selected[1]}"
+    # צבעים
+    text_color = (50, 50, 50)  # אפור כהה מאוד
+    gold_color = (184, 134, 11) # זהב
+    
+    # 1. לוגו בצד שמאל למעלה (במקום ערוץ 2000)
+    logo_text = "2HalahotBeyom"
+    draw.text((30, 30), logo_text, font=font_logo, fill=text_color)
+
+    # 2. כותרת ראשית: שבת פרשת...
+    title_text = fix_text(f"שבת פרשת {parasha}")
+    # ממקם במרכז (בערך גובה 150-200 מהלמעלה)
+    bbox = draw.textbbox((0, 0), title_text, font=font_title)
+    w_text = bbox[2] - bbox[0]
+    draw.text(((W - w_text) / 2, 180), title_text, font=font_title, fill=text_color)
+
+    # 3. כותרות הטבלה
+    header = fix_text("   עיר        כניסה       יציאה   ")
+    bbox_head = draw.textbbox((0, 0), header, font=font_text)
+    w_head = bbox_head[2] - bbox_head[0]
+    draw.text(((W - w_head) / 2, 400), header, font=font_text, fill=gold_color)
+
+    # קו מפריד מתחת לכותרת
+    draw.line((100, 480, W - 100, 480), fill=text_color, width=3)
+
+    # 4. מילוי הנתונים
+    start_y = 530
+    row_height = 110 # רווח בין שורות
+    
+    for row in times:
+        city_text = fix_text(row['city'])
+        candles_text = row['candles']
+        havdalah_text = row['havdalah']
+
+        # עיר (ימין)
+        draw.text((W - 200, start_y), city_text, font=font_text, fill=text_color, anchor="rs")
         
-        # אם היום יום שישי (יום 4 ב-Python כי 0 זה שני), נוסיף זמני שבת
-        if datetime.now().weekday() == 4:
-            shabbat_msg = get_shabbat_times()
-            final_message = f"{halacha_msg}\n\n---\n{shabbat_msg}\n\nשבת שלום! ✡️"
-        else:
-            final_message = halacha_msg
+        # כניסה (אמצע)
+        draw.text((W / 2, start_y), candles_text, font=font_text, fill=text_color, anchor="ms")
+        
+        # יציאה (שמאל)
+        draw.text((200, start_y), havdalah_text, font=font_text, fill=text_color, anchor="ls")
 
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        requests.post(url, data={"chat_id": CHANNEL, "text": final_message, "parse_mode": "Markdown"})
+        start_y += row_height
+
+    output_filename = "shabbat_final.jpg"
+    img.save(output_filename)
+    return output_filename
+
+def send_photo(image_path, caption):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    with open(image_path, 'rb') as img_file:
+        data = {'chat_id': CHANNEL_ID, 'caption': caption}
+        files = {'photo': img_file}
+        requests.post(url, data=data, files=files)
+
+# --- הלכות רגילות ---
+def get_random_halachot():
+    with open('halachot.txt', 'r', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    return random.sample(lines, 2)
+
+def send_telegram_message(text):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {'chat_id': CHANNEL_ID, 'text': text}
+    requests.post(url, json=payload)
+
+# --- MAIN ---
+def main():
+    # בדיקת יום בשבוע (0=שני, ..., 4=שישי, 5=שבת, 6=ראשון)
+    # שים לב: בשרתי גיטהב לפעמים השעון הוא UTC.
+    # ליתר ביטחון נוודא שאנחנו לא בשבת
+    
+    weekday = datetime.datetime.now().weekday()
+    
+    # יום שבת הוא 5 בפייתון
+    if weekday == 5:
+        print("Shabbat Shalom! Bot is resting.")
+        return # עצירה מוחלטת
+    
+    # יום שישי הוא 4 בפייתון
+    if weekday == 4:
+        print("It's Friday! Generating Shabbat times...")
+        parasha, times = get_shabbat_times()
+        image_path = create_shabbat_image(parasha, times)
+        caption = "שבת שלום ומבורך לכל עם ישראל! 🕯️🍷"
+        send_photo(image_path, caption)
+        
     else:
-        print("Not enough lines")
+        # ימים ראשון (6), שני (0), שלישי (1), רביעי (2), חמישי (3)
+        print("Regular day. Sending Halachot...")
+        halachot = get_random_halachot()
+        message = f"🌟 **הלכה יומית** 🌟\n\n1. {halachot[0]}\n\n2. {halachot[1]}\n\nיום מבורך! ✨"
+        send_telegram_message(message)
 
 if __name__ == "__main__":
-    job()
+    main()
