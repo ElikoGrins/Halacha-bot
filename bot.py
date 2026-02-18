@@ -19,17 +19,22 @@ CITIES = [
     {"name": "באר שבע", "geonameid": "295530"}
 ]
 
+# פונקציה לתיקון עברית - חשובה מאוד!
 def fix_text(text):
     if not text: return ""
     try:
+        # 1. עיצוב האותיות (חיבורים)
         reshaped_text = arabic_reshaper.reshape(text)
+        # 2. היפוך סדר הכתיבה (מימין לשמאל)
         return get_display(reshaped_text)
     except:
+        # במקרה של תקלה, מחזיר את הטקסט המקורי
         return text
 
 def get_shabbat_times():
     print("Fetching times...")
     today = datetime.date.today()
+    # חישוב יום שישי הקרוב
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
     date_str = friday.strftime("%Y-%m-%d")
     results = []
@@ -48,7 +53,7 @@ def get_shabbat_times():
                 elif item["category"] == "havdalah":
                     havdalah = item["title"].split(": ")[1]
                 elif item["category"] == "parashat":
-                    # תיקון כפילות: אם כתוב "פרשת נח", נמחק את ה"פרשת" כדי שלא יהיה פעמיים
+                    # מחיקת המילה "פרשת" אם היא קיימת, כדי לא לכפול
                     parasha_name = item["hebrew"].replace("פרשת ", "")
             results.append({"city": city["name"], "candles": candles, "havdalah": havdalah})
         except Exception as e:
@@ -57,6 +62,7 @@ def get_shabbat_times():
 
 def create_shabbat_image(parasha, times):
     print("Creating layout...")
+    # טעינת תמונת הרקע
     if os.path.exists("Shabbat_bg.jpg.JPG"):
         img = Image.open("Shabbat_bg.jpg.JPG")
     elif os.path.exists("image.png"):
@@ -67,58 +73,53 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    # פונטים מוקטנים משמעותית
+    # --- פונטים מוקטנים עוד יותר ---
     try:
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 30)   # היה 40+
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 45)  # היה 60+
-        font_header = ImageFont.truetype("Assistant-Bold.ttf", 30) # כותרת טבלה
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 30)   # תוכן טבלה
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 30)
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 35) # הוקטן מ-45
+        font_header = ImageFont.truetype("Assistant-Bold.ttf", 25) # הוקטן מ-30
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 25)   # הוקטן מ-30
     except:
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
     gold_color = (180, 130, 20)
 
-    # --- תיקון 1: לוגו קטן בצד שמאל למעלה ---
-    # anchor="lt" אומר Left Top - הפינה השמאלית העליונה של הטקסט
+    # 1. לוגו (שמאל למעלה)
     draw.text((40, 40), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- תיקון 2: הטקסט בצד ימין למעלה ---
-    # אנחנו מיישרים הכל לפי הקו הימני (W - 50)
+    # --- אזור הטקסט בצד ימין ---
     right_margin = W - 50
     current_y = 50
 
-    # כותרת ראשית (פרשת השבוע)
-    # שימוש ב-fix_text כדי שהעברית לא תהיה הפוכה
+    # 2. כותרת ראשית
+    # שימוש קריטי ב-fix_text
     full_title = fix_text(f"שבת פרשת {parasha}")
-    # anchor="rt" אומר Right Top - מיישר את הטקסט לימין
     draw.text((right_margin, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה
-    current_y += 80
+    # 3. כותרות טבלה
+    current_y += 60 # רווח קטן יותר
     header = fix_text("   עיר        כניסה       יציאה   ")
     draw.text((right_margin, current_y), header, font=font_header, fill=gold_color, anchor="rt")
     
-    # קו מפריד קטן
-    current_y += 40
-    draw.line((right_margin - 350, current_y, right_margin, current_y), fill=text_color, width=2)
+    # קו מפריד
+    current_y += 35
+    draw.line((right_margin - 300, current_y, right_margin, current_y), fill=text_color, width=2)
 
-    # שורות הטבלה
-    current_y += 20
-    row_space = 45 
+    # 4. שורות הטבלה
+    current_y += 15
+    row_space = 35 # רווח צפוף יותר בין השורות
     
     for row in times:
-        city = fix_text(row['city'])
+        # שימוש קריטי ב-fix_text לשם העיר
+        city_fixed = fix_text(row['city'])
         
-        # בניית השורה ידנית כדי לשלוט ברווחים
-        # עיר - בצד ימין
-        draw.text((right_margin, current_y), city, font=font_text, fill=text_color, anchor="rt")
-        
-        # כניסה - זזה שמאלה (כ-130 פיקסלים מהימין)
-        draw.text((right_margin - 160, current_y), row['candles'], font=font_text, fill=text_color, anchor="rt")
-        
-        # יציאה - עוד שמאלה (כ-280 פיקסלים מהימין)
-        draw.text((right_margin - 300, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="rt")
+        # עיר (ימין)
+        draw.text((right_margin, current_y), city_fixed, font=font_text, fill=text_color, anchor="rt")
+        # כניסה (אמצע-שמאל)
+        draw.text((right_margin - 140, current_y), row['candles'], font=font_text, fill=text_color, anchor="rt")
+        # יציאה (שמאל)
+        draw.text((right_margin - 260, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="rt")
         
         current_y += row_space
 
@@ -132,11 +133,11 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    print("Starting TEST run...")
+    print("Starting TEST run - Hebrew Fix + Re-size")
     if True: 
         parasha, times = get_shabbat_times()
         path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת עיצוב - תיקון עברית הפוכה, כפילות וגדלים")
+        send_photo(path, "בדיקת עיצוב - תיקון עברית הפוכה והקטנה נוספת")
 
 if __name__ == "__main__":
     main()
