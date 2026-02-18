@@ -52,61 +52,62 @@ def create_shabbat_image(parasha, times):
     
     font_path = "Shofar-Bold.ttf"
     try:
-        # הקטנת פונטים בהתאם לבקשה (כותרת ב-20%, טבלה ב-30%)
-        font_main_title = ImageFont.truetype(font_path, 26) # הוקטן מ-32 (20%-)
+        # התאמת גדלים לפי בקשה
+        font_logo = ImageFont.truetype(font_path, 18)      # הוקטן ב-30% מ-26
+        font_main_title = ImageFont.truetype(font_path, 26)
         font_parasha = ImageFont.truetype(font_path, 24)
-        font_logo = ImageFont.truetype(font_path, 26)
-        font_header = ImageFont.truetype(font_path, 15) # הוקטן מ-22 (30%-)
-        font_text = ImageFont.truetype(font_path, 15)   # הוקטן מ-22 (30%-)
-        font_dedication = ImageFont.truetype(font_path, 18)
+        
+        # הטבלה הוגדלה ב-20% (מ-15 ל-18)
+        font_header = ImageFont.truetype(font_path, 18) 
+        font_text = ImageFont.truetype(font_path, 18)   
+        
+        font_dedication = ImageFont.truetype(font_path, 20)
     except:
-        font_main_title = font_parasha = font_logo = font_header = font_text = font_dedication = ImageFont.load_default()
+        font_logo = font_main_title = font_parasha = font_header = font_text = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     text_color = (40, 40, 40)
     highlight_color = (20, 50, 100) 
-    gold_bright = (255, 215, 0)    
-    bronze_color = (160, 110, 40)  
+    gold_bright = (255, 215, 0)    # זהב בוהק
 
-    # גובה אחיד ללוגו ולכותרת
-    top_y = 20
+    top_y = 25
 
-    # 1. לוגו כחול - שמאל
+    # 1. לוגו כחול - שמאל (מוקטן)
     draw.text((30, top_y), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
     # 2. כותרות וטבלה - ימין
     right_edge = W - 30 
     x_city = right_edge         
-    x_candles = right_edge - 80   # מרווח מצומצם יותר כי הפונט קטן
-    x_havdalah = right_edge - 150 
+    x_candles = right_edge - 100  
+    x_havdalah = right_edge - 190 
 
-    # כותרת ראשית שחורה - באותו קו עם הלוגו
+    # כותרת ראשית שחורה
     draw.text((x_city, top_y), "זמני כניסת ויציאת שבת", font=font_main_title, fill=black_color, anchor="rt")
     
-    # פרשת השבוע - צמודה לכותרת מלמעלה
+    # פרשת השבוע - זהב בוהק
     current_y = top_y + 40
     draw.text((x_city, current_y), f"פרשת {parasha}", font=font_parasha, fill=gold_bright, anchor="rt")
 
     # כותרות טבלה (כניסה/יציאה)
-    current_y += 45
+    current_y += 50
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     
     # קו מפריד
-    current_y += 25
-    draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=2)
+    current_y += 30
+    draw.line((x_havdalah - 40, current_y, x_city, current_y), fill=text_color, width=2)
 
-    # שורות הטבלה (שמות ערים וזמנים)
-    current_y += 15
+    # שורות הטבלה (מוגדלות)
+    current_y += 20
     for row in times:
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
-        current_y += 25 # רווח קטן יותר בין השורות
+        current_y += 35
 
-    # 3. הקדשה
-    current_y += 35
-    draw.text((x_city, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=bronze_color, anchor="rt")
+    # 3. הקדשה - בצבע זהב בוהק כמו הפרשה
+    current_y += 45
+    draw.text((x_city, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=gold_bright, anchor="rt")
 
     img.save("shabbat_test.jpg")
     return "shabbat_test.jpg"
@@ -119,7 +120,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "טסט עיצוב: יישור כותרת-לוגו וצמצום טבלה")
+    send_photo(path, "טסט עיצוב: הקטנת לוגו, הגדלת טבלה והקדשה בזהב")
 
 if __name__ == "__main__":
     main()
