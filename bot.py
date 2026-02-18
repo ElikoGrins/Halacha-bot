@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 # --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = "269175916" 
+CHANNEL_ID = os.environ.get("CHANNEL_ID") 
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
