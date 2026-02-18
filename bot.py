@@ -50,64 +50,68 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    font_path = "Shofar-Bold.ttf"
+    font_shofar = "Shofar-Bold.ttf"
+    font_assistant = "Assistant-Bold.ttf"
+    
     try:
-        # התאמת גדלים לפי בקשה
-        font_logo = ImageFont.truetype(font_path, 18)      # הוקטן ב-30% מ-26
-        font_main_title = ImageFont.truetype(font_path, 26)
-        font_parasha = ImageFont.truetype(font_path, 24)
+        font_logo = ImageFont.truetype(font_shofar, 18)
+        # כותרת בפונט Assistant
+        font_main_title = ImageFont.truetype(font_assistant, 26)
+        font_parasha = ImageFont.truetype(font_shofar, 24)
         
-        # הטבלה הוגדלה ב-20% (מ-15 ל-18)
-        font_header = ImageFont.truetype(font_path, 18) 
-        font_text = ImageFont.truetype(font_path, 18)   
+        # הטבלה הוקטנה ב-10% נוספים (מ-18 ל-16)
+        font_header = ImageFont.truetype(font_shofar, 16) 
+        font_text = ImageFont.truetype(font_shofar, 16)   
         
-        font_dedication = ImageFont.truetype(font_path, 20)
+        font_dedication = ImageFont.truetype(font_shofar, 20)
     except:
         font_logo = font_main_title = font_parasha = font_header = font_text = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     text_color = (40, 40, 40)
     highlight_color = (20, 50, 100) 
-    gold_bright = (255, 215, 0)    # זהב בוהק
+    gold_bright = (255, 215, 0)    
 
     top_y = 25
+    right_edge = W - 30 
 
-    # 1. לוגו כחול - שמאל (מוקטן)
+    # 1. לוגו כחול - שמאל
     draw.text((30, top_y), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
-    # 2. כותרות וטבלה - ימין
-    right_edge = W - 30 
-    x_city = right_edge         
-    x_candles = right_edge - 100  
-    x_havdalah = right_edge - 190 
-
-    # כותרת ראשית שחורה
-    draw.text((x_city, top_y), "זמני כניסת ויציאת שבת", font=font_main_title, fill=black_color, anchor="rt")
+    # 2. כותרת ראשית שחורה - ימין
+    title_text = "זמני כניסת ויציאת שבת"
+    draw.text((right_edge, top_y), title_text, font=font_main_title, fill=black_color, anchor="rt")
     
-    # פרשת השבוע - זהב בוהק
+    # חישוב מרכז הכותרת לצורך מיקום הפרשה מתחתיה
+    title_bbox = draw.textbbox((right_edge, top_y), title_text, font=font_main_title, anchor="rt")
+    title_center_x = (title_bbox[0] + title_bbox[2]) / 2
+    
+    # פרשת השבוע - ממורכזת תחת הכותרת בזהב
     current_y = top_y + 40
-    draw.text((x_city, current_y), f"פרשת {parasha}", font=font_parasha, fill=gold_bright, anchor="rt")
+    draw.text((title_center_x, current_y), f"פרשת {parasha}", font=font_parasha, fill=gold_bright, anchor="mt")
 
-    # כותרות טבלה (כניסה/יציאה)
+    # 3. טבלה
+    x_city = right_edge         
+    x_candles = right_edge - 90  
+    x_havdalah = right_edge - 170 
+
     current_y += 50
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     
-    # קו מפריד
-    current_y += 30
-    draw.line((x_havdalah - 40, current_y, x_city, current_y), fill=text_color, width=2)
+    current_y += 25
+    draw.line((x_havdalah - 35, current_y, x_city, current_y), fill=text_color, width=2)
 
-    # שורות הטבלה (מוגדלות)
-    current_y += 20
+    current_y += 15
     for row in times:
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
-        current_y += 35
+        current_y += 30
 
-    # 3. הקדשה - בצבע זהב בוהק כמו הפרשה
-    current_y += 45
-    draw.text((x_city, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=gold_bright, anchor="rt")
+    # 4. הקדשה
+    current_y += 40
+    draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=gold_bright, anchor="rt")
 
     img.save("shabbat_test.jpg")
     return "shabbat_test.jpg"
@@ -120,7 +124,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "טסט עיצוב: הקטנת לוגו, הגדלת טבלה והקדשה בזהב")
+    send_photo(path, "טסט עיצוב: כותרת Assistant, פרשה ממורכזת וטבלה מוקטנת")
 
 if __name__ == "__main__":
     main()
