@@ -62,18 +62,18 @@ def create_shabbat_image(parasha, times):
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
-    gold_color = (180, 130, 20)
+    # צבע זהב זוהר (Glow Gold)
+    gold_color = (255, 215, 0) 
 
-    # --- 1. לוגו (צד שמאל למעלה) ---
+    # --- 1. לוגו ---
     draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- 2. טבלה עם מרווחים מצומצמים ב-50% ---
-    right_margin = W - 50 
+    # --- 2. טבלה (עמודת עיר זזה ימינה) ---
+    right_margin = W - 30 # הוזז מ-50 ל-30 כדי להצמיד לימין
     
-    # צמצום המרחקים בין העמודות
     x_city = right_margin         
-    x_candles = right_margin - 90  # היה 180, צומצם ב-50%
-    x_havdalah = right_margin - 160 # היה 320, צומצם ב-50%
+    x_candles = right_margin - 80  
+    x_havdalah = right_margin - 150 
 
     current_y = 50
 
@@ -81,13 +81,13 @@ def create_shabbat_image(parasha, times):
     full_title = f"שבת פרשת {parasha}"
     draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה
+    # כותרות טבלה בצבע הזהב החדש
     current_y += 50
     draw.text((x_city, current_y), "עיר", font=font_header, fill=gold_color, anchor="rt")
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=gold_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=gold_color, anchor="mt")
     
-    # קו מפריד מצומצם בהתאם
+    # קו מפריד
     current_y += 30
     draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=2)
 
@@ -96,13 +96,9 @@ def create_shabbat_image(parasha, times):
     row_space = 30 
     
     for row in times:
-        # עיר (ימין)
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
-        # כניסה (ממורכז לעמודה)
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
-        # יציאה (ממורכז לעמודה)
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
-        
         current_y += row_space
 
     img.save("shabbat_final.jpg")
@@ -116,7 +112,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "בדיקה אחרונה - מרווחים מצומצמים ב-50%")
+    send_photo(path, "תיקון אחרון: עמודה ימינה וזהב זוהר")
 
 if __name__ == "__main__":
     main()
