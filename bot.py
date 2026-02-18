@@ -9,7 +9,7 @@ from bidi.algorithm import get_display
 
 # --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHANNEL_ID")
+CHANNEL_ID = "269175916"
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
     {"name": "תל אביב", "geonameid": "293397"},
@@ -163,7 +163,7 @@ def main():
         return # עצירה מוחלטת
     
     # יום שישי הוא 4 בפייתון
-    if weekday == 4:
+    if True: # בדיקה
         print("It's Friday! Generating Shabbat times...")
         parasha, times = get_shabbat_times()
         image_path = create_shabbat_image(parasha, times)
