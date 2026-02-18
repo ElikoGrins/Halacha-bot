@@ -10,27 +10,26 @@ from bidi.algorithm import get_display
 # --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
 
-# --- הגדרות ערוץ (כרגע במצב בדיקה על ה-ID שלך) ---
+# --- מצב בדיקה: שולח ל-ID שלך ---
 CHANNEL_ID = "269175916" 
-# כשתסיים לבדוק, תחזיר את השורה הזו להערה ותפעיל את השורה למטה:
+# כשתסיים לבדוק, תחזיר את השורה למטה ותמחק את השורה למעלה:
 # CHANNEL_ID = os.environ.get("CHANNEL_ID")
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
     {"name": "תל אביב", "geonameid": "293397"},
     {"name": "חיפה", "geonameid": "294801"},
-    {"name": "באר שבע", "geonameid": "295530"},
-    {"name": "אילת", "geonameid": "295277"}
+    {"name": "באר שבע", "geonameid": "295530"}
+    # אילת הוסרה לבקשתך
 ]
 
-# --- פונקציות עזר ---
 def fix_text(text):
     if not text: return ""
     reshaped_text = arabic_reshaper.reshape(text)
     return get_display(reshaped_text)
 
 def get_shabbat_times():
-    print("Fetching Shabbat times...")
+    print("Fetching times...")
     today = datetime.date.today()
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
     date_str = friday.strftime("%Y-%m-%d")
@@ -54,100 +53,84 @@ def get_shabbat_times():
                     parasha_name = item["hebrew"]
             results.append({"city": city["name"], "candles": candles, "havdalah": havdalah})
         except Exception as e:
-            print(f"Error fetching {city['name']}: {e}")
+            print(f"Error {city['name']}: {e}")
             
     return parasha_name, results
 
 def create_shabbat_image(parasha, times):
-    print("Creating layout...")
-    
-    # 1. יצירת קנבס חדש ונקי (בגודל סטורי - 1080x1350)
-    # צבע הרקע הוא אפור בהיר מאוד שיתאים לקיר בתמונה שלך
-    canvas_width = 1080
-    canvas_height = 1350
-    final_img = Image.new('RGB', (canvas_width, canvas_height), color=(230, 230, 230))
-    
-    # 2. טעינת תמונת הרקע שלך
-    bg_loaded = False
+    print("Creating image layout...")
+    # שימוש בתמונה המקורית (לרוחב) כרקע
     if os.path.exists("Shabbat_bg.jpg.JPG"):
-        original_img = Image.open("Shabbat_bg.jpg.JPG")
-        bg_loaded = True
+        img = Image.open("Shabbat_bg.jpg.JPG")
     elif os.path.exists("image.png"):
-        original_img = Image.open("image.png")
-        bg_loaded = True
+        img = Image.open("image.png")
+    else:
+        # גיבוי למקרה שהתמונה לא נמצאת
+        img = Image.new('RGB', (1200, 800), color=(240, 240, 235))
+
+    draw = ImageDraw.Draw(img)
+    W, H = img.size
     
-    # 3. הדבקת התמונה למטה
-    if bg_loaded:
-        # התאמת רוחב התמונה לרוחב הקנבס (1080)
-        ratio = canvas_width / original_img.width
-        new_height = int(original_img.height * ratio)
-        resized_bg = original_img.resize((canvas_width, new_height))
-        
-        # הדבקה בחלק התחתון של הקנבס
-        final_img.paste(resized_bg, (0, canvas_height - new_height))
-    
-    draw = ImageDraw.Draw(final_img)
-    
-    # 4. טעינת פונטים
+    # פונטים (הקטנתי מעט שיתאים לאזור החדש)
     try:
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 90)
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 55) # הקטנתי קצת שייכנס יפה
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 45)
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 50)
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 65)
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 45)
     except:
-        font_title = font_text = font_logo = ImageFont.load_default()
+        font_logo = font_title = font_text = ImageFont.load_default()
 
-    text_color = (40, 40, 40) # אפור כהה
-    gold_color = (160, 120, 10) # זהב כהה
+    text_color = (40, 40, 40)
+    gold_color = (180, 130, 20)
 
-    # לוגו (למעלה בצד)
-    draw.text((40, 40), "2HalahotBeyom", font=font_logo, fill=text_color)
+    # --- מיקום 1: לוגו בצד שמאל למעלה (ריבוע כחול) ---
+    draw.text((50, 50), "2HalahotBeyom", font=font_logo, fill=text_color)
 
-    # כותרת ראשית (למעלה במרכז - בשטח הריק)
+    # --- מיקום 2: טבלה בצד ימין (ריבוע אדום) ---
+    # מגדירים את מרכז האזור הימני
+    right_area_center_x = W * 0.75 
+    start_y = H * 0.25 # התחלה בערך ברבע הגובה
+
+    # כותרת ראשית
     title = fix_text(f"שבת פרשת {parasha}")
-    bbox = draw.textbbox((0, 0), title, font=font_title)
-    w = bbox[2] - bbox[0]
-    # מיקום קבוע בגובה 150 פיקסלים
-    draw.text(((canvas_width - w) / 2, 150), title, font=font_title, fill=text_color)
+    draw.text((right_area_center_x, start_y), title, font=font_title, fill=text_color, anchor="ms")
 
     # כותרות טבלה
+    header_y = start_y + 100
     header = fix_text("   עיר        כניסה       יציאה   ")
-    bbox_h = draw.textbbox((0, 0), header, font=font_text)
-    w_h = bbox_h[2] - bbox_h[0]
-    draw.text(((canvas_width - w_h) / 2, 350), header, font=font_text, fill=gold_color)
+    draw.text((right_area_center_x, header_y), header, font=font_text, fill=gold_color, anchor="ms")
     
-    draw.line((150, 430, canvas_width - 150, 430), fill=text_color, width=3)
+    # קו מפריד (קצר יותר, מותאם לאזור)
+    line_y = header_y + 60
+    draw.line((right_area_center_x - 200, line_y, right_area_center_x + 200, line_y), fill=text_color, width=2)
 
-    # נתונים
-    y = 480
+    # שורות הטבלה
+    rows_y = line_y + 50
+    row_space = 70
     for row in times:
         city = fix_text(row['city'])
-        # עיר בימין
-        draw.text((canvas_width - 250, y), city, font=font_text, fill=text_color, anchor="rs")
-        # כניסה באמצע
-        draw.text((canvas_width / 2, y), row['candles'], font=font_text, fill=text_color, anchor="ms")
-        # יציאה בשמאל
-        draw.text((250, y), row['havdalah'], font=font_text, fill=text_color, anchor="ls")
-        y += 100
+        # מיקומים יחסיים למרכז האזור הימני
+        draw.text((right_area_center_x + 150, rows_y), city, font=font_text, fill=text_color, anchor="rs")
+        draw.text((right_area_center_x, rows_y), row['candles'], font=font_text, fill=text_color, anchor="ms")
+        draw.text((right_area_center_x - 150, rows_y), row['havdalah'], font=font_text, fill=text_color, anchor="ls")
+        rows_y += row_space
 
-    final_img.save("shabbat_final.jpg")
+    img.save("shabbat_final.jpg")
     return "shabbat_final.jpg"
 
 def send_photo(image_path, caption):
-    print(f"Sending photo to {CHANNEL_ID}...")
+    print(f"Sending to {CHANNEL_ID}...")
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(image_path, 'rb') as f:
-        resp = requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
-    print(f"Telegram response: {resp.text}")
+        requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
+# --- פונקציה ראשית לבדיקה ---
 def main():
-    print("Starting bot (Visual Fix)...")
-    
-    # מצב בדיקה פעיל
+    print("Starting TEST run...")
+    # מכריחים ריצה לבדיקה
     if True: 
-        print("Simulating Friday...")
         parasha, times = get_shabbat_times()
-        path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת עיצוב סופית - תיקון פרופורציות")
+        image_path = create_shabbat_image(parasha, times)
+        send_photo(image_path, "בדיקת מיקומים סופית (בלי אילת)")
 
 if __name__ == "__main__":
     main()
