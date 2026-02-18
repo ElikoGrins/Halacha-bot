@@ -16,11 +16,6 @@ CITIES = [
     {"name": "באר שבע", "geonameid": "295530"}
 ]
 
-# פונקציה פשוטה להיפוך עברית (בלי ספריות חיצוניות)
-def reverse_hebrew(text):
-    if not text: return ""
-    return text[::-1]
-
 def get_shabbat_times():
     print("Fetching times...")
     today = datetime.date.today()
@@ -60,62 +55,62 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    # --- פונטים מוקטנים משמעותית (50% בטבלה, 20% בלוגו) ---
     try:
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 25)   # הוקטן מ-30 ל-25
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 25)  # הוקטן מ-35 ל-25
-        font_header = ImageFont.truetype("Assistant-Bold.ttf", 18) # הוקטן מ-25 ל-18
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 18)   # הוקטן מ-25 ל-18
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 25)
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 25)
+        font_header = ImageFont.truetype("Assistant-Bold.ttf", 18)
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 18)
     except:
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
     gold_color = (180, 130, 20)
 
-    # --- 1. לוגו: הוקטן, הוזז למעלה וימינה ---
-    # היה ב-40,40. הזזתי ל-60,30 (יותר ימינה ולמעלה)
-    draw.text((60, 30), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
+    # --- 1. לוגו: הוזז שמאלה ולמעלה (מעל הלהבה) ---
+    # היה ב-60,30. עכשיו ב-30,20.
+    draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- 2. טבלה: הוקטנה ב-50% והוצמדה לימין ---
-    right_margin = W - 50
+    # --- 2. טבלה וכותרות ---
+    # קובעים נקודות עוגן קבועות לכל עמודה כדי שהכל יהיה מיושר פלס
+    right_margin = W - 50  # קו ימין של התמונה
+    
+    # מיקומי ה-X של העמודות:
+    x_city = right_margin         # עמודת עיר (מיושרת לימין)
+    x_candles = right_margin - 180 # עמודת כניסה (ממורכזת)
+    x_havdalah = right_margin - 320 # עמודת יציאה (ממורכזת)
+
     current_y = 50
 
-    # כותרת: הופכים אותה ידנית כדי שתופיע ישר
-    # למשל: "שבת פרשת נח" -> "חנ תשרפ תבש"
+    # כותרת: עברית רגילה (בלי היפוך)
     full_title = f"שבת פרשת {parasha}"
-    title_reversed = reverse_hebrew(full_title)
-    draw.text((right_margin, current_y), title_reversed, font=font_title, fill=text_color, anchor="rt")
+    draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה: הופכים רק את המילים בעברית
+    # כותרות טבלה
     current_y += 50
-    # "יציאה       כניסה       עיר" (בסדר הפוך כדי שיוצג נכון)
-    header_str = "   האיצי        הסינכ       ריע   " 
-    draw.text((right_margin, current_y), header_str, font=font_header, fill=gold_color, anchor="rt")
+    # עיר - מיושרת לימין
+    draw.text((x_city, current_y), "עיר", font=font_header, fill=gold_color, anchor="rt")
+    # כניסה - ממורכזת לפי העמודה שלה
+    draw.text((x_candles, current_y), "כניסה", font=font_header, fill=gold_color, anchor="mt")
+    # יציאה - ממורכזת לפי העמודה שלה
+    draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=gold_color, anchor="mt")
     
-    # קו מפריד (קצר יותר כי הפונט קטן)
+    # קו מפריד
     current_y += 30
-    draw.line((right_margin - 200, current_y, right_margin, current_y), fill=text_color, width=2)
+    draw.line((x_havdalah - 40, current_y, x_city, current_y), fill=text_color, width=2)
 
     # שורות הטבלה
     current_y += 20
-    row_space = 30 # רווח צפוף יותר
+    row_space = 30 
     
     for row in times:
-        city_reversed = reverse_hebrew(row['city'])
+        # עיר (ימין)
+        draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
         
-        # בניית השורה: שעה | שעה | עיר
-        # בגלל שאנחנו מיישרים לימין (anchor="rt"), אנחנו כותבים:
-        # עיר (הכי ימין) -> כניסה -> יציאה
-        # אבל בגלל שהטקסט בעיר הפוך, זה ייראה: "םילשורי"
+        # כניסה (אמצע - ממורכז) - המספרים יושבים בול מתחת לכותרת
+        draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
         
-        # מיקום העיר (ימין)
-        draw.text((right_margin, current_y), city_reversed, font=font_text, fill=text_color, anchor="rt")
-        
-        # מיקום כניסה (קצת שמאלה)
-        draw.text((right_margin - 100, current_y), row['candles'], font=font_text, fill=text_color, anchor="rt")
-        
-        # מיקום יציאה (עוד שמאלה)
-        draw.text((right_margin - 200, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="rt")
+        # יציאה (שמאל - ממורכז)
+        draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
         
         current_y += row_space
 
@@ -129,11 +124,11 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    print("Starting TEST run - Manual Hebrew Fix")
+    print("Starting TEST run - No Reversal + Alignment Fix")
     if True: 
         parasha, times = get_shabbat_times()
         path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת עיצוב - עברית הפוכה ידנית והקטנה מסיבית")
+        send_photo(path, "בדיקת עיצוב סופית - הכל ישר ומיושר")
 
 if __name__ == "__main__":
     main()
