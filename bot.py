@@ -4,9 +4,10 @@ import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
-# --- הגדרות ---
+# --- הגדרות לבדיקה ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHANNEL_ID")
+# שולח אליך לפרטי לצורך הטסט
+CHANNEL_ID = "269175916" 
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
@@ -16,6 +17,7 @@ CITIES = [
 ]
 
 def get_shabbat_times():
+    print("Fetching times for test...")
     today = datetime.date.today()
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
     date_str = friday.strftime("%Y-%m-%d")
@@ -27,8 +29,7 @@ def get_shabbat_times():
         try:
             response = requests.get(url)
             data = response.json()
-            candles = ""
-            havdalah = ""
+            candles, havdalah = "", ""
             for item in data["items"]:
                 if item["category"] == "candles":
                     candles = item["title"].split(": ")[1]
@@ -42,7 +43,8 @@ def get_shabbat_times():
     return parasha_name, results
 
 def create_shabbat_image(parasha, times):
-    # פתיחת הרקע
+    print("Creating image with Keter font...")
+    # טעינת רקע
     if os.path.exists("Shabbat_bg.jpg.JPG"):
         img = Image.open("Shabbat_bg.jpg.JPG")
     elif os.path.exists("image.png"):
@@ -53,85 +55,66 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
+    # פונט כתר - וודא שהשם תואם למה שהעלית!
+    font_path = "KeterYG-Bold.ttf"
     try:
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 25)
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 25)
-        font_header = ImageFont.truetype("Assistant-Bold.ttf", 18)
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 18)
-        font_dedication = ImageFont.truetype("Assistant-Bold.ttf", 20)
+        font_logo = ImageFont.truetype(font_path, 26)
+        font_title = ImageFont.truetype(font_path, 28)
+        font_header = ImageFont.truetype(font_path, 20)
+        font_text = ImageFont.truetype(font_path, 20)
+        font_dedication = ImageFont.truetype(font_path, 22)
+        print("Success: Keter font loaded.")
     except:
+        print("Warning: Keter font not found, using default.")
         font_logo = font_title = font_header = font_text = font_dedication = ImageFont.load_default()
 
     text_color = (40, 40, 40)
     highlight_color = (20, 50, 100) # כחול מלכותי
     bronze_color = (160, 110, 40)  # זהב-חום
 
-    # 1. לוגו כחול בצד שמאל למעלה
+    # 1. לוגו כחול - למעלה משמאל
     draw.text((20, 15), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
-    # 2. טבלה
+    # 2. טבלה - ימין
     right_edge = W - 20 
-    x_city = right_edge         
-    x_candles = right_edge - 100  
-    x_havdalah = right_edge - 180 
+    x_city, x_candles, x_havdalah = right_edge, right_edge - 110, right_edge - 200 
 
     current_y = 50
-    full_title = f"שבת פרשת {parasha}"
-    draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
+    draw.text((x_city, current_y), f"שבת פרשת {parasha}", font=font_title, fill=text_color, anchor="rt")
 
-    current_y += 50
+    current_y += 55
     draw.text((x_city, current_y), "עיר", font=font_header, fill=highlight_color, anchor="rt")
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     
-    current_y += 30
-    draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=3)
+    current_y += 35
+    draw.line((x_havdalah - 40, current_y, x_city, current_y), fill=text_color, width=3)
 
     current_y += 20
     for row in times:
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
-        current_y += 30
+        current_y += 35
 
     # 3. הקדשה
-    current_y += 40
+    current_y += 45
     draw.text((x_city, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=bronze_color, anchor="rt")
 
-    img.save("shabbat_final.jpg")
-    return "shabbat_final.jpg"
+    img.save("shabbat_test.jpg")
+    return "shabbat_test.jpg"
 
 def send_photo(image_path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(image_path, 'rb') as f:
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
-def get_random_halachot():
-    with open('halachot.txt', 'r', encoding='utf-8') as f:
-        lines = [line.strip() for line in f if line.strip()]
-    return random.sample(lines, 2)
-
-def send_telegram_message(text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    payload = {'chat_id': CHANNEL_ID, 'text': text, 'parse_mode': 'Markdown'}
-    requests.post(url, json=payload)
-
 def main():
-    now = datetime.datetime.now()
-    weekday = now.weekday()
-    current_hour_min = now.strftime("%H:%M")
-
-    # ביום שישי ב-07:30 שולחים את התמונה
-    if weekday == 4 and "07:28" < current_hour_min < "07:35":
-        parasha, times = get_shabbat_times()
-        path = create_shabbat_image(parasha, times)
-        send_photo(path, "שבת שלום ומבורך! 🕯️🍷")
-    
-    # ביום שישי ב-07:25 שולחים הלכות, וגם בכל יום חול אחר באותה שעה
-    elif (weekday <= 4) and ("07:22" < current_hour_min < "07:27"):
-        halachot = get_random_halachot()
-        message = f"🌟 **הלכה יומית** 🌟\n\n1. {halachot[0]}\n\n2. {halachot[1]}\n\nיום מבורך! ✨"
-        send_telegram_message(message)
+    # בבדיקה אנחנו מריצים הכל בלי לבדוק יום ושעה
+    parasha, times = get_shabbat_times()
+    path = create_shabbat_image(parasha, times)
+    send_photo(path, "טסט לעיצוב שבת עם פונט כתר - בדיקת מיקומים וצבעים")
+    print("Test image sent to your private chat!")
 
 if __name__ == "__main__":
     main()
