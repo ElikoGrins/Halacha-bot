@@ -58,48 +58,52 @@ def create_shabbat_image(parasha, times):
         font_title = ImageFont.truetype("Assistant-Bold.ttf", 25)
         font_header = ImageFont.truetype("Assistant-Bold.ttf", 18)
         font_text = ImageFont.truetype("Assistant-Bold.ttf", 18)
+        font_dedication = ImageFont.truetype("Assistant-Bold.ttf", 20)
     except:
-        font_logo = font_title = font_header = font_text = ImageFont.load_default()
+        font_logo = font_title = font_header = font_text = font_dedication = ImageFont.load_default()
 
-    text_color = (40, 40, 40) # אפור כהה מאוד (כמעט שחור) לטקסט הרגיל
-    # צבע בולט לכותרות: כחול כהה עמוק (Royal Blue עמוק)
-    highlight_color = (20, 50, 100) 
+    text_color = (40, 40, 40)
+    highlight_color = (20, 50, 100) # הכחול הבולט מהשלב הקודם
+    bronze_color = (160, 110, 40) # צבע הזהב-חום להקדשה
 
-    # --- 1. לוגו ---
-    draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
+    # --- 1. לוגו: עלה עוד למעלה והוצמד לשמאל ---
+    draw.text((20, 15), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
     # --- 2. טבלה ---
     right_edge = W - 20 
-    
     x_city = right_edge         
     x_candles = right_edge - 100  
     x_havdalah = right_edge - 180 
 
     current_y = 50
 
-    # כותרת ראשית (פרשת השבוע)
+    # כותרת פרשה
     full_title = f"שבת פרשת {parasha}"
     draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה בצבע הבולט החדש
+    # כותרות טבלה
     current_y += 50
     draw.text((x_city, current_y), "עיר", font=font_header, fill=highlight_color, anchor="rt")
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     
-    # קו מפריד (קצת יותר עבה לניראות)
+    # קו מפריד
     current_y += 30
     draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=3)
 
     # שורות הטבלה
     current_y += 20
     row_space = 30 
-    
     for row in times:
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
         current_y += row_space
+
+    # --- 3. הקדשה מתחת לטבלה ---
+    current_y += 40
+    dedication_text = "לעילוי נשמת אליהו בן ישועה"
+    draw.text((x_city, current_y), dedication_text, font=font_dedication, fill=bronze_color, anchor="rt")
 
     img.save("shabbat_final.jpg")
     return "shabbat_final.jpg"
@@ -112,7 +116,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "בדיקת צבע בולט (כחול עמוק) וניגודיות")
+    send_photo(path, "עיצוב סופי כולל הקדשה ומיקום לוגו מתוקן")
 
 if __name__ == "__main__":
     main()
