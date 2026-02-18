@@ -1,8 +1,6 @@
 import os
 import requests
-import random
 import datetime
-import json
 from PIL import Image, ImageDraw, ImageFont
 
 # --- הגדרות ---
@@ -66,37 +64,32 @@ def create_shabbat_image(parasha, times):
     text_color = (40, 40, 40)
     gold_color = (180, 130, 20)
 
-    # --- 1. לוגו: הוזז שמאלה ולמעלה (מעל הלהבה) ---
-    # היה ב-60,30. עכשיו ב-30,20.
+    # --- 1. לוגו (צד שמאל למעלה) ---
     draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- 2. טבלה וכותרות ---
-    # קובעים נקודות עוגן קבועות לכל עמודה כדי שהכל יהיה מיושר פלס
-    right_margin = W - 50  # קו ימין של התמונה
+    # --- 2. טבלה עם מרווחים מצומצמים ב-50% ---
+    right_margin = W - 50 
     
-    # מיקומי ה-X של העמודות:
-    x_city = right_margin         # עמודת עיר (מיושרת לימין)
-    x_candles = right_margin - 180 # עמודת כניסה (ממורכזת)
-    x_havdalah = right_margin - 320 # עמודת יציאה (ממורכזת)
+    # צמצום המרחקים בין העמודות
+    x_city = right_margin         
+    x_candles = right_margin - 90  # היה 180, צומצם ב-50%
+    x_havdalah = right_margin - 160 # היה 320, צומצם ב-50%
 
     current_y = 50
 
-    # כותרת: עברית רגילה (בלי היפוך)
+    # כותרת ראשית
     full_title = f"שבת פרשת {parasha}"
     draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
     # כותרות טבלה
     current_y += 50
-    # עיר - מיושרת לימין
     draw.text((x_city, current_y), "עיר", font=font_header, fill=gold_color, anchor="rt")
-    # כניסה - ממורכזת לפי העמודה שלה
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=gold_color, anchor="mt")
-    # יציאה - ממורכזת לפי העמודה שלה
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=gold_color, anchor="mt")
     
-    # קו מפריד
+    # קו מפריד מצומצם בהתאם
     current_y += 30
-    draw.line((x_havdalah - 40, current_y, x_city, current_y), fill=text_color, width=2)
+    draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=2)
 
     # שורות הטבלה
     current_y += 20
@@ -105,11 +98,9 @@ def create_shabbat_image(parasha, times):
     for row in times:
         # עיר (ימין)
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
-        
-        # כניסה (אמצע - ממורכז) - המספרים יושבים בול מתחת לכותרת
+        # כניסה (ממורכז לעמודה)
         draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
-        
-        # יציאה (שמאל - ממורכז)
+        # יציאה (ממורכז לעמודה)
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
         
         current_y += row_space
@@ -118,17 +109,14 @@ def create_shabbat_image(parasha, times):
     return "shabbat_final.jpg"
 
 def send_photo(image_path, caption):
-    print(f"Sending to {CHANNEL_ID}...")
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(image_path, 'rb') as f:
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    print("Starting TEST run - No Reversal + Alignment Fix")
-    if True: 
-        parasha, times = get_shabbat_times()
-        path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת עיצוב סופית - הכל ישר ומיושר")
+    parasha, times = get_shabbat_times()
+    path = create_shabbat_image(parasha, times)
+    send_photo(path, "בדיקה אחרונה - מרווחים מצומצמים ב-50%")
 
 if __name__ == "__main__":
     main()
