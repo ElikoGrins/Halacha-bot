@@ -62,18 +62,18 @@ def create_shabbat_image(parasha, times):
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
-    # צבע זהב זוהר (Glow Gold)
-    gold_color = (255, 215, 0) 
+    # זהב חום עמוק (Deep Golden Brown)
+    gold_color = (190, 150, 50) 
 
     # --- 1. לוגו ---
     draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- 2. טבלה (עמודת עיר זזה ימינה) ---
-    right_margin = W - 30 # הוזז מ-50 ל-30 כדי להצמיד לימין
+    # --- 2. טבלה (תיקון מיקום עיר וצבע) ---
+    right_edge = W - 20 # הצמדה לקצה הימני של התמונה
     
-    x_city = right_margin         
-    x_candles = right_margin - 80  
-    x_havdalah = right_margin - 150 
+    x_city = right_edge         
+    x_candles = right_edge - 100  # רווח של 100 פיקסלים מהעיר
+    x_havdalah = right_edge - 180 # רווח נוסף של 80 פיקסלים
 
     current_y = 50
 
@@ -81,7 +81,7 @@ def create_shabbat_image(parasha, times):
     full_title = f"שבת פרשת {parasha}"
     draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה בצבע הזהב החדש
+    # כותרות טבלה בזהב חום
     current_y += 50
     draw.text((x_city, current_y), "עיר", font=font_header, fill=gold_color, anchor="rt")
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=gold_color, anchor="mt")
@@ -112,7 +112,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "תיקון אחרון: עמודה ימינה וזהב זוהר")
+    send_photo(path, "תיקון מיקום עיר וצבע זהב-חום")
 
 if __name__ == "__main__":
     main()
