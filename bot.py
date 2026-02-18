@@ -9,8 +9,7 @@ from bidi.algorithm import get_display
 
 # --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
-
-# --- מצב בדיקה מופעל (שולח אליך) ---
+# מצב בדיקה - שולח אליך לפרטי
 CHANNEL_ID = "269175916" 
 
 CITIES = [
@@ -53,8 +52,6 @@ def get_shabbat_times():
 
 def create_shabbat_image(parasha, times):
     print("Creating layout...")
-    
-    # טעינת התמונה שלך
     if os.path.exists("Shabbat_bg.jpg.JPG"):
         img = Image.open("Shabbat_bg.jpg.JPG")
     elif os.path.exists("image.png"):
@@ -65,60 +62,48 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    # פונטים מותאמים לגודל (קטנים יותר כדי להיכנס בצד)
+    # פונטים קטנים יותר
     try:
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 40)  # לוגו קטן
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 55) # כותרת בינונית
-        font_header = ImageFont.truetype("Assistant-Bold.ttf", 40) # כותרת טבלה
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 35)   # טקסט טבלה
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 40)
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 45)
+        font_header = ImageFont.truetype("Assistant-Bold.ttf", 35)
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 30)
     except:
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
     gold_color = (180, 130, 20)
 
-    # --- 1. לוגו: פינה שמאלית עליונה (הריבוע הכחול) ---
-    draw.text((50, 50), "2HalahotBeyom", font=font_logo, fill=text_color)
+    # --- לוגו: נמוך יותר ורחוק מהנר ---
+    logo_x = 70
+    logo_y = 100
+    draw.text((logo_x, logo_y), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="la")
 
-    # --- 2. אזור הטקסט: צד ימין (הריבוע האדום) ---
-    # אנחנו מגדירים את "מרכז" הטקסט בנקודה שהיא 75% מרוחב התמונה
-    # זה דוחף את הכל ימינה לקיר הריק
-    center_x = W * 0.78  
-    
-    # גובה התחלתי
-    current_y = H * 0.20 # מתחילים ב-20% מגובה התמונה
-
-    # כותרת ראשית
+    # --- כותרת ראשית: נמוכה יותר ---
     title = fix_text(f"שבת פרשת {parasha}")
-    draw.text((center_x, current_y), title, font=font_title, fill=text_color, anchor="ms") # ms = Middle (horiz) Top (vert)
+    title_x = W * 0.75
+    title_y = 250
+    draw.text((title_x, title_y), title, font=font_title, fill=text_color, anchor="mt")
 
-    # כותרות טבלה
-    current_y += 100
+    # --- טבלה: נמוכה יותר וצפופה יותר ---
+    header_y = 350
     header = fix_text("   עיר        כניסה       יציאה   ")
-    draw.text((center_x, current_y), header, font=font_header, fill=gold_color, anchor="ms")
+    draw.text((title_x, header_y), header, font=font_header, fill=gold_color, anchor="mt")
     
     # קו מפריד
-    current_y += 40
-    draw.line((center_x - 180, current_y, center_x + 180, current_y), fill=text_color, width=2)
+    line_y = 380
+    draw.line((title_x - 150, line_y, title_x + 150, line_y), fill=text_color, width=2)
 
     # שורות הטבלה
-    current_y += 40
-    row_space = 55 # רווח צפוף יותר בין השורות
+    rows_y = 410
+    row_space = 45 # רווח צפוף יותר
     
     for row in times:
         city = fix_text(row['city'])
-        
-        # חישוב מיקומים יחסיים למרכז הטור הימני
-        # עיר בימין
-        draw.text((center_x + 130, current_y), city, font=font_text, fill=text_color, anchor="rs") # rs = Right Side anchor
-        
-        # כניסה באמצע
-        draw.text((center_x, current_y), row['candles'], font=font_text, fill=text_color, anchor="ms")
-        
-        # יציאה בשמאל
-        draw.text((center_x - 130, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="ls") # ls = Left Side anchor
-        
-        current_y += row_space
+        draw.text((title_x + 100, rows_y), city, font=font_text, fill=text_color, anchor="rt")
+        draw.text((title_x, rows_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
+        draw.text((title_x - 100, rows_y), row['havdalah'], font=font_text, fill=text_color, anchor="lt")
+        rows_y += row_space
 
     img.save("shabbat_final.jpg")
     return "shabbat_final.jpg"
@@ -134,7 +119,7 @@ def main():
     if True: 
         parasha, times = get_shabbat_times()
         path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת מיקומים סופית - הכל בימין")
+        send_photo(path, "בדיקת מיקומים סופית - הכל תוקן והונמך")
 
 if __name__ == "__main__":
     main()
