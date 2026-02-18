@@ -55,38 +55,33 @@ def create_shabbat_image(parasha, times):
     
     try:
         font_logo = ImageFont.truetype(font_shofar, 18)
-        # כותרת בפונט Assistant
         font_main_title = ImageFont.truetype(font_assistant, 26)
         font_parasha = ImageFont.truetype(font_shofar, 24)
-        
-        # הטבלה הוקטנה ב-10% נוספים (מ-18 ל-16)
         font_header = ImageFont.truetype(font_shofar, 16) 
         font_text = ImageFont.truetype(font_shofar, 16)   
-        
         font_dedication = ImageFont.truetype(font_shofar, 20)
     except:
         font_logo = font_main_title = font_parasha = font_header = font_text = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     text_color = (40, 40, 40)
-    highlight_color = (20, 50, 100) 
+    highlight_color = (20, 50, 100) # הכחול המלכותי
     gold_bright = (255, 215, 0)    
 
-    top_y = 25
+    # 1. לוגו כחול - צמוד לפינה השמאלית העליונה
+    draw.text((15, 10), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
+
+    # 2. כותרות - ימין
     right_edge = W - 30 
+    top_y = 25
 
-    # 1. לוגו כחול - שמאל
-    draw.text((30, top_y), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
-
-    # 2. כותרת ראשית שחורה - ימין
     title_text = "זמני כניסת ויציאת שבת"
     draw.text((right_edge, top_y), title_text, font=font_main_title, fill=black_color, anchor="rt")
     
-    # חישוב מרכז הכותרת לצורך מיקום הפרשה מתחתיה
+    # חישוב מרכז הכותרת עבור הפרשה
     title_bbox = draw.textbbox((right_edge, top_y), title_text, font=font_main_title, anchor="rt")
     title_center_x = (title_bbox[0] + title_bbox[2]) / 2
     
-    # פרשת השבוע - ממורכזת תחת הכותרת בזהב
     current_y = top_y + 40
     draw.text((title_center_x, current_y), f"פרשת {parasha}", font=font_parasha, fill=gold_bright, anchor="mt")
 
@@ -109,9 +104,9 @@ def create_shabbat_image(parasha, times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
         current_y += 30
 
-    # 4. הקדשה
+    # 4. הקדשה - בצבע כחול כמו הלוגו
     current_y += 40
-    draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=gold_bright, anchor="rt")
+    draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=highlight_color, anchor="rt")
 
     img.save("shabbat_test.jpg")
     return "shabbat_test.jpg"
@@ -124,7 +119,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "טסט עיצוב: כותרת Assistant, פרשה ממורכזת וטבלה מוקטנת")
+    send_photo(path, "טסט סופי: לוגו למעלה משמאל והקדשה בכחול")
 
 if __name__ == "__main__":
     main()
