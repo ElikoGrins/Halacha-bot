@@ -3,14 +3,11 @@ name: Daily Halacha Bot
 on:
   workflow_dispatch:
   schedule:
-    # Test run: 11:00 AM Israel Time (09:00 UTC)
-    - cron: '0 9 * * *'
-    
-    # Regular days: 07:25 AM Israel Time (05:25 UTC)
+    # ימים ראשון עד חמישי ושבת: 07:25 בבוקר שעון ישראל (05:25 UTC)
     - cron: '25 5 * * 0,1,2,3,4,6'
     
-    # Friday: 09:25 AM Israel Time (07:25 UTC)
-    - cron: '25 7 * * 5'
+    # יום שישי: 07:30 בבוקר שעון ישראל (05:30 UTC)
+    - cron: '30 5 * * 5'
 
 jobs:
   build:
