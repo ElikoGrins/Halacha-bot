@@ -61,35 +61,35 @@ def create_shabbat_image(parasha, times):
     except:
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
-    text_color = (40, 40, 40)
-    # זהב חום עמוק (Deep Golden Brown)
-    gold_color = (190, 150, 50) 
+    text_color = (40, 40, 40) # אפור כהה מאוד (כמעט שחור) לטקסט הרגיל
+    # צבע בולט לכותרות: כחול כהה עמוק (Royal Blue עמוק)
+    highlight_color = (20, 50, 100) 
 
     # --- 1. לוגו ---
     draw.text((30, 20), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- 2. טבלה (תיקון מיקום עיר וצבע) ---
-    right_edge = W - 20 # הצמדה לקצה הימני של התמונה
+    # --- 2. טבלה ---
+    right_edge = W - 20 
     
     x_city = right_edge         
-    x_candles = right_edge - 100  # רווח של 100 פיקסלים מהעיר
-    x_havdalah = right_edge - 180 # רווח נוסף של 80 פיקסלים
+    x_candles = right_edge - 100  
+    x_havdalah = right_edge - 180 
 
     current_y = 50
 
-    # כותרת ראשית
+    # כותרת ראשית (פרשת השבוע)
     full_title = f"שבת פרשת {parasha}"
     draw.text((x_city, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
 
-    # כותרות טבלה בזהב חום
+    # כותרות טבלה בצבע הבולט החדש
     current_y += 50
-    draw.text((x_city, current_y), "עיר", font=font_header, fill=gold_color, anchor="rt")
-    draw.text((x_candles, current_y), "כניסה", font=font_header, fill=gold_color, anchor="mt")
-    draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=gold_color, anchor="mt")
+    draw.text((x_city, current_y), "עיר", font=font_header, fill=highlight_color, anchor="rt")
+    draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
+    draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     
-    # קו מפריד
+    # קו מפריד (קצת יותר עבה לניראות)
     current_y += 30
-    draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=2)
+    draw.line((x_havdalah - 30, current_y, x_city, current_y), fill=text_color, width=3)
 
     # שורות הטבלה
     current_y += 20
@@ -112,7 +112,7 @@ def send_photo(image_path, caption):
 def main():
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "תיקון מיקום עיר וצבע זהב-חום")
+    send_photo(path, "בדיקת צבע בולט (כחול עמוק) וניגודיות")
 
 if __name__ == "__main__":
     main()
