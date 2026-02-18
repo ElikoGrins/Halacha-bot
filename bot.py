@@ -4,12 +4,9 @@ import random
 import datetime
 import json
 from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
 
 # --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
-# מצב בדיקה - שולח אליך לפרטי
 CHANNEL_ID = "269175916" 
 
 CITIES = [
@@ -19,22 +16,14 @@ CITIES = [
     {"name": "באר שבע", "geonameid": "295530"}
 ]
 
-# פונקציה לתיקון עברית - חשובה מאוד!
-def fix_text(text):
+# פונקציה פשוטה להיפוך עברית (בלי ספריות חיצוניות)
+def reverse_hebrew(text):
     if not text: return ""
-    try:
-        # 1. עיצוב האותיות (חיבורים)
-        reshaped_text = arabic_reshaper.reshape(text)
-        # 2. היפוך סדר הכתיבה (מימין לשמאל)
-        return get_display(reshaped_text)
-    except:
-        # במקרה של תקלה, מחזיר את הטקסט המקורי
-        return text
+    return text[::-1]
 
 def get_shabbat_times():
     print("Fetching times...")
     today = datetime.date.today()
-    # חישוב יום שישי הקרוב
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
     date_str = friday.strftime("%Y-%m-%d")
     results = []
@@ -53,7 +42,6 @@ def get_shabbat_times():
                 elif item["category"] == "havdalah":
                     havdalah = item["title"].split(": ")[1]
                 elif item["category"] == "parashat":
-                    # מחיקת המילה "פרשת" אם היא קיימת, כדי לא לכפול
                     parasha_name = item["hebrew"].replace("פרשת ", "")
             results.append({"city": city["name"], "candles": candles, "havdalah": havdalah})
         except Exception as e:
@@ -62,7 +50,6 @@ def get_shabbat_times():
 
 def create_shabbat_image(parasha, times):
     print("Creating layout...")
-    # טעינת תמונת הרקע
     if os.path.exists("Shabbat_bg.jpg.JPG"):
         img = Image.open("Shabbat_bg.jpg.JPG")
     elif os.path.exists("image.png"):
@@ -73,53 +60,62 @@ def create_shabbat_image(parasha, times):
     draw = ImageDraw.Draw(img)
     W, H = img.size
     
-    # --- פונטים מוקטנים עוד יותר ---
+    # --- פונטים מוקטנים משמעותית (50% בטבלה, 20% בלוגו) ---
     try:
-        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 30)
-        font_title = ImageFont.truetype("Assistant-Bold.ttf", 35) # הוקטן מ-45
-        font_header = ImageFont.truetype("Assistant-Bold.ttf", 25) # הוקטן מ-30
-        font_text = ImageFont.truetype("Assistant-Bold.ttf", 25)   # הוקטן מ-30
+        font_logo = ImageFont.truetype("Assistant-Bold.ttf", 25)   # הוקטן מ-30 ל-25
+        font_title = ImageFont.truetype("Assistant-Bold.ttf", 25)  # הוקטן מ-35 ל-25
+        font_header = ImageFont.truetype("Assistant-Bold.ttf", 18) # הוקטן מ-25 ל-18
+        font_text = ImageFont.truetype("Assistant-Bold.ttf", 18)   # הוקטן מ-25 ל-18
     except:
         font_logo = font_title = font_header = font_text = ImageFont.load_default()
 
     text_color = (40, 40, 40)
     gold_color = (180, 130, 20)
 
-    # 1. לוגו (שמאל למעלה)
-    draw.text((40, 40), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
+    # --- 1. לוגו: הוקטן, הוזז למעלה וימינה ---
+    # היה ב-40,40. הזזתי ל-60,30 (יותר ימינה ולמעלה)
+    draw.text((60, 30), "2HalahotBeyom", font=font_logo, fill=text_color, anchor="lt")
 
-    # --- אזור הטקסט בצד ימין ---
+    # --- 2. טבלה: הוקטנה ב-50% והוצמדה לימין ---
     right_margin = W - 50
     current_y = 50
 
-    # 2. כותרת ראשית
-    # שימוש קריטי ב-fix_text
-    full_title = fix_text(f"שבת פרשת {parasha}")
-    draw.text((right_margin, current_y), full_title, font=font_title, fill=text_color, anchor="rt")
+    # כותרת: הופכים אותה ידנית כדי שתופיע ישר
+    # למשל: "שבת פרשת נח" -> "חנ תשרפ תבש"
+    full_title = f"שבת פרשת {parasha}"
+    title_reversed = reverse_hebrew(full_title)
+    draw.text((right_margin, current_y), title_reversed, font=font_title, fill=text_color, anchor="rt")
 
-    # 3. כותרות טבלה
-    current_y += 60 # רווח קטן יותר
-    header = fix_text("   עיר        כניסה       יציאה   ")
-    draw.text((right_margin, current_y), header, font=font_header, fill=gold_color, anchor="rt")
+    # כותרות טבלה: הופכים רק את המילים בעברית
+    current_y += 50
+    # "יציאה       כניסה       עיר" (בסדר הפוך כדי שיוצג נכון)
+    header_str = "   האיצי        הסינכ       ריע   " 
+    draw.text((right_margin, current_y), header_str, font=font_header, fill=gold_color, anchor="rt")
     
-    # קו מפריד
-    current_y += 35
-    draw.line((right_margin - 300, current_y, right_margin, current_y), fill=text_color, width=2)
+    # קו מפריד (קצר יותר כי הפונט קטן)
+    current_y += 30
+    draw.line((right_margin - 200, current_y, right_margin, current_y), fill=text_color, width=2)
 
-    # 4. שורות הטבלה
-    current_y += 15
-    row_space = 35 # רווח צפוף יותר בין השורות
+    # שורות הטבלה
+    current_y += 20
+    row_space = 30 # רווח צפוף יותר
     
     for row in times:
-        # שימוש קריטי ב-fix_text לשם העיר
-        city_fixed = fix_text(row['city'])
+        city_reversed = reverse_hebrew(row['city'])
         
-        # עיר (ימין)
-        draw.text((right_margin, current_y), city_fixed, font=font_text, fill=text_color, anchor="rt")
-        # כניסה (אמצע-שמאל)
-        draw.text((right_margin - 140, current_y), row['candles'], font=font_text, fill=text_color, anchor="rt")
-        # יציאה (שמאל)
-        draw.text((right_margin - 260, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="rt")
+        # בניית השורה: שעה | שעה | עיר
+        # בגלל שאנחנו מיישרים לימין (anchor="rt"), אנחנו כותבים:
+        # עיר (הכי ימין) -> כניסה -> יציאה
+        # אבל בגלל שהטקסט בעיר הפוך, זה ייראה: "םילשורי"
+        
+        # מיקום העיר (ימין)
+        draw.text((right_margin, current_y), city_reversed, font=font_text, fill=text_color, anchor="rt")
+        
+        # מיקום כניסה (קצת שמאלה)
+        draw.text((right_margin - 100, current_y), row['candles'], font=font_text, fill=text_color, anchor="rt")
+        
+        # מיקום יציאה (עוד שמאלה)
+        draw.text((right_margin - 200, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="rt")
         
         current_y += row_space
 
@@ -133,11 +129,11 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    print("Starting TEST run - Hebrew Fix + Re-size")
+    print("Starting TEST run - Manual Hebrew Fix")
     if True: 
         parasha, times = get_shabbat_times()
         path = create_shabbat_image(parasha, times)
-        send_photo(path, "בדיקת עיצוב - תיקון עברית הפוכה והקטנה נוספת")
+        send_photo(path, "בדיקת עיצוב - עברית הפוכה ידנית והקטנה מסיבית")
 
 if __name__ == "__main__":
     main()
