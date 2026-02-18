@@ -3,10 +3,9 @@ name: Daily Halacha Bot
 on:
   workflow_dispatch:
   schedule:
-    # ימים ראשון עד חמישי ושבת: 07:25 בבוקר שעון ישראל (05:25 UTC)
-    - cron: '25 5 * * 0,1,2,3,4,6'
-    
-    # יום שישי: 07:30 בבוקר שעון ישראל (05:30 UTC)
+    # ימים ראשון עד חמישי: 07:25 בבוקר (הורדנו את 6 - שבת)
+    - cron: '25 5 * * 0,1,2,3,4'
+    # יום שישי: 07:30 בבוקר
     - cron: '30 5 * * 5'
 
 jobs:
@@ -22,7 +21,8 @@ jobs:
           python-version: '3.9'
 
       - name: Install dependencies
-        run: pip install requests
+        # התקנת ספריות לעיצוב תמונות ועברית
+        run: pip install requests Pillow arabic-reshaper python-bidi
 
       - name: Run bot
         env:
