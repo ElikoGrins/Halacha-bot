@@ -4,9 +4,9 @@ import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
-# --- הגדרות סופיות ---
+# --- הגדרות ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHANNEL_ID") # חוזר לערוץ הכללי
+CHANNEL_ID = os.environ.get("CHANNEL_ID")
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
@@ -62,13 +62,13 @@ def create_shabbat_image(parasha, times):
 
     black_color = (0, 0, 0)
     text_color = (40, 40, 40)
-    highlight_color = (20, 50, 100) # כחול מלכותי
-    gold_deep = (184, 134, 11)      # זהב כהה (Dark Goldenrod)
+    highlight_color = (20, 50, 100) 
+    gold_deep = (184, 134, 11)      
 
-    # 1. לוגו - פינה שמאלית עליונה
+    # 1. לוגו
     draw.text((15, 10), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
-    # 2. כותרות - ימין
+    # 2. כותרות
     right_edge = W - 30 
     top_y = 25
     title_text = "זמני כניסת ויציאת שבת"
@@ -82,14 +82,11 @@ def create_shabbat_image(parasha, times):
 
     # 3. טבלה
     x_city, x_candles, x_havdalah = right_edge, right_edge - 90, right_edge - 170 
-
     current_y += 45 
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
-    
     current_y += 22 
     draw.line((x_havdalah - 35, current_y, x_city, current_y), fill=text_color, width=2)
-
     current_y += 10 
     for row in times:
         draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
@@ -97,17 +94,12 @@ def create_shabbat_image(parasha, times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
         current_y += 26 
 
-    # 4. הקדשה - ירדה עוד קצת למטה
+    # 4. הקדשה
     current_y += 40 
     draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=highlight_color, anchor="rt")
 
     img.save("shabbat_final.jpg")
     return "shabbat_final.jpg"
-
-def send_photo(image_path, caption):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-    with open(image_path, 'rb') as f:
-        requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def get_random_halachot():
     with open('halachot.txt', 'r', encoding='utf-8') as f:
@@ -118,19 +110,23 @@ def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text, 'parse_mode': 'Markdown'})
 
-def main():
-    now = datetime.datetime.now()
-    weekday = now.weekday()
-    current_time = now.strftime("%H:%M")
+def send_photo(image_path, caption):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    with open(image_path, 'rb') as f:
+        requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
-    # ריצה ב-07:30 ביום שישי (תמונה)
-    if weekday == 4 and "07:28" < current_time < "07:35":
+def main():
+    # קבלת היום בשבוע (0 = שני, 4 = שישי, 6 = ראשון)
+    # הערה: בשרתים לפעמים השבוע מתחיל אחרת, אבל 4 זה תמיד שישי.
+    weekday = datetime.datetime.now().weekday()
+
+    if weekday == 4:
+        # יום שישי - שליחת תמונת זמני שבת
         parasha, times = get_shabbat_times()
         path = create_shabbat_image(parasha, times)
         send_photo(path, "שבת שלום ומבורך! 🕯️🍷")
-    
-    # ריצה ב-07:25 (הלכות) - בימי חול ושישי
-    elif weekday <= 4 and "07:22" < current_time < "07:27":
+    else:
+        # כל יום אחר - שליחת הלכות בלבד
         h = get_random_halachot()
         msg = f"🌟 **הלכה יומית** 🌟\n\n1. {h[0]}\n\n2. {h[1]}\n\nיום מבורך! ✨"
         send_telegram_message(msg)
