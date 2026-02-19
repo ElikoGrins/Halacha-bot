@@ -54,10 +54,10 @@ def create_shabbat_image(times):
     W, H = img.size
 
     try:
-        # פונט שעות (גודל 52)
-        font_times = ImageFont.truetype("Assistant-Bold.ttf", 52) 
-        # פונט הקדשה ולוגו (גודל 34) - אותו פונט לשניהם
-        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 34) 
+        # פונט שעות (הוגדל ב-10% מ-52 ל-57)
+        font_times = ImageFont.truetype("Assistant-Bold.ttf", 57) 
+        # פונט הקדשה ולוגו (הוגדל ב-10% מ-34 ל-37)
+        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 37) 
     except:
         font_times = font_dedication = ImageFont.load_default()
 
@@ -65,14 +65,14 @@ def create_shabbat_image(times):
     
     # --- 1. ציור לוגו טלגרם בפינה השמאלית העליונה ---
     logo_x, logo_y = 30, 30
-    icon_size = 34 # גודל האייקון תואם לגובה הטקסט
+    icon_size = 37 # גודל האייקון הותאם לפונט החדש
     draw_telegram_icon(draw, logo_x, logo_y, icon_size)
-    # ציור הטקסט ליד האייקון באותו פונט של ההקדשה
+    # ציור הטקסט ליד האייקון
     draw.text((logo_x + icon_size + 10, logo_y - 4), "2HalahotBeyom", font=font_dedication, fill=black_color, anchor="lt")
 
     # --- 2. הגדרות מיקומים לזמנים ---
-    x_candles = W * 0.68  # נשאר ללא שינוי
-    x_havdalah = W * 0.53 # הוזז מעט שמאלה (היה 0.55)
+    x_candles = W * 0.68  
+    x_havdalah = W * 0.53 
     
     start_y = H * 0.35    
     y_spacing = H * 0.08  
@@ -84,7 +84,7 @@ def create_shabbat_image(times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
-    # --- 4. ציור ההקדשה (באותו פונט של הלוגו) ---
+    # --- 4. ציור ההקדשה ---
     draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
 
     final_path = "shabbat_test.jpg"
@@ -99,7 +99,7 @@ def send_photo(image_path, caption):
 def main():
     times = get_shabbat_times()
     path = create_shabbat_image(times)
-    send_photo(path, "טסט: יציאה שמאלה, נוסף לוגו טלגרם למעלה")
+    send_photo(path, "טסט אחרון: הכל הוגדל ב-10%")
 
 if __name__ == "__main__":
     main()
