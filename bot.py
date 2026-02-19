@@ -1,11 +1,12 @@
 import os
 import requests
+import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
-# --- הגדרות לבדיקה ---
+# --- הגדרות שרת (Production) ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = "269175916" # שולח אליך לפרטי לצורך הטסט
+CHANNEL_ID = os.environ.get("CHANNEL_ID") # שולח לערוץ הכללי המוגדר ב-Secrets
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
@@ -40,56 +41,65 @@ def get_shabbat_times():
                 elif item["category"] == "havdalah":
                     havdalah = item["title"].split(": ")[1]
             results.append({"city": city["name"], "candles": candles, "havdalah": havdalah})
-        except: pass
+        except Exception as e:
+            print(f"Error fetching times for {city['name']}: {e}")
     return results
 
 def create_shabbat_image(times):
+    # 1. טעינת התבנית המוכנה
     try:
         img = Image.open("shabbat_template.jpg")
     except Exception as e:
         print(f"שגיאה בטעינת התמונה: {e}")
+        # במקרה חירום בלבד: תמונה ריקה
         img = Image.new('RGB', (1200, 800), color='white')
 
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
+    # 2. הגדרת פונטים (בגדלים המדויקים)
     try:
-        # פונט שעות (הוגדל ב-10% מ-52 ל-57)
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 57) 
-        # פונט הקדשה ולוגו (הוגדל ב-10% מ-34 ל-37)
         font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 37) 
     except:
         font_times = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     
-    # --- 1. ציור לוגו טלגרם בפינה השמאלית העליונה ---
+    # --- 3. ציור לוגו טלגרם בפינה השמאלית העליונה ---
     logo_x, logo_y = 30, 30
-    icon_size = 37 # גודל האייקון הותאם לפונט החדש
+    icon_size = 37 
     draw_telegram_icon(draw, logo_x, logo_y, icon_size)
-    # ציור הטקסט ליד האייקון
     draw.text((logo_x + icon_size + 10, logo_y - 4), "2HalahotBeyom", font=font_dedication, fill=black_color, anchor="lt")
 
-    # --- 2. הגדרות מיקומים לזמנים ---
+    # --- 4. הגדרות מיקומים לזמנים ---
     x_candles = W * 0.68  
     x_havdalah = W * 0.53 
-    
     start_y = H * 0.35    
     y_spacing = H * 0.08  
 
-    # --- 3. ציור הזמנים ---
+    # --- 5. ציור הזמנים על התבנית ---
     current_y = start_y
     for row in times:
         draw.text((x_candles, current_y), row['candles'], font=font_times, fill=black_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
-    # --- 4. ציור ההקדשה ---
+    # --- 6. ציור ההקדשה ---
     draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
 
-    final_path = "shabbat_test.jpg"
+    final_path = "shabbat_final.jpg"
     img.save(final_path)
     return final_path
+
+def get_random_halachot():
+    with open('halachot.txt', 'r', encoding='utf-8') as f:
+        lines = [line.strip() for line in f if line.strip()]
+    return random.sample(lines, 2)
+
+def send_telegram_message(text):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text, 'parse_mode': 'Markdown'})
 
 def send_photo(image_path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
@@ -97,9 +107,23 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    times = get_shabbat_times()
-    path = create_shabbat_image(times)
-    send_photo(path, "טסט אחרון: הכל הוגדל ב-10%")
+    # בדיקת היום בשבוע (0=שני, ..., 4=שישי)
+    weekday = datetime.datetime.now().weekday()
+
+    if weekday == 4:
+        # יום שישי - יצירת תמונה ושליחתה
+        print("Today is Friday. Generating and sending Shabbat image...")
+        times = get_shabbat_times()
+        path = create_shabbat_image(times)
+        send_photo(path, "שבת שלום ומבורך! 🕯️🍷")
+        print("Shabbat image sent successfully.")
+    else:
+        # ימים אחרים - שליחת הלכות
+        print("Sending daily halachot...")
+        h = get_random_halachot()
+        msg = f"🌟 **הלכה יומית** 🌟\n\n1. {h[0]}\n\n2. {h[1]}\n\nיום מבורך! ✨"
+        send_telegram_message(msg)
+        print("Halachot sent successfully.")
 
 if __name__ == "__main__":
     main()
