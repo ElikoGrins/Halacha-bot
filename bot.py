@@ -4,9 +4,9 @@ import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
-# --- הגדרות ---
+# --- הגדרות לבדיקה ---
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHANNEL_ID")
+CHANNEL_ID = "269175916" # שולח אליך לפרטי לצורך הטסט
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
@@ -14,6 +14,14 @@ CITIES = [
     {"name": "חיפה", "geonameid": "294801"},
     {"name": "באר שבע", "geonameid": "295530"}
 ]
+
+def draw_telegram_icon(draw, x, y, size):
+    # ציור עיגול כחול קטן (אייקון טלגרם)
+    bg_color = (36, 161, 222)
+    draw.ellipse([x, y, x + size, y + size], fill=bg_color)
+    # ציור "מטוס נייר" לבן בתוך העיגול
+    p = [(x+size*0.25, y+size*0.5), (x+size*0.75, y+size*0.3), (x+size*0.6, y+size*0.7), (x+size*0.5, y+size*0.55)]
+    draw.polygon(p, fill="white")
 
 def get_shabbat_times():
     today = datetime.date.today()
@@ -60,19 +68,19 @@ def create_shabbat_image(parasha, times):
     except:
         font_logo = font_main_title = font_parasha = font_header = font_text = font_dedication = ImageFont.load_default()
 
-    black_color = (0, 0, 0)
-    text_color = (40, 40, 40)
     highlight_color = (20, 50, 100) 
-    gold_deep = (184, 134, 11)      
+    gold_deep = (184, 134, 11)      # זהב כהה
 
-    # 1. לוגו
-    draw.text((15, 10), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
+    # 1. לוגו + אייקון טלגרם (פינה שמאלית עליונה)
+    icon_size = 20
+    draw_telegram_icon(draw, 15, 12, icon_size)
+    draw.text((15 + icon_size + 5, 10), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
-    # 2. כותרות
+    # 2. כותרות - ימין
     right_edge = W - 30 
     top_y = 25
     title_text = "זמני כניסת ויציאת שבת"
-    draw.text((right_edge, top_y), title_text, font=font_main_title, fill=black_color, anchor="rt")
+    draw.text((right_edge, top_y), title_text, font=font_main_title, fill=(0,0,0), anchor="rt")
     
     title_bbox = draw.textbbox((right_edge, top_y), title_text, font=font_main_title, anchor="rt")
     title_center_x = (title_bbox[0] + title_bbox[2]) / 2
@@ -86,29 +94,20 @@ def create_shabbat_image(parasha, times):
     draw.text((x_candles, current_y), "כניסה", font=font_header, fill=highlight_color, anchor="mt")
     draw.text((x_havdalah, current_y), "יציאה", font=font_header, fill=highlight_color, anchor="mt")
     current_y += 22 
-    draw.line((x_havdalah - 35, current_y, x_city, current_y), fill=text_color, width=2)
+    draw.line((x_havdalah - 35, current_y, x_city, current_y), fill=(40,40,40), width=2)
     current_y += 10 
     for row in times:
-        draw.text((x_city, current_y), row['city'], font=font_text, fill=text_color, anchor="rt")
-        draw.text((x_candles, current_y), row['candles'], font=font_text, fill=text_color, anchor="mt")
-        draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=text_color, anchor="mt")
+        draw.text((x_city, current_y), row['city'], font=font_text, fill=(40,40,40), anchor="rt")
+        draw.text((x_candles, current_y), row['candles'], font=font_text, fill=(40,40,40), anchor="mt")
+        draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=(40,40,40), anchor="mt")
         current_y += 26 
 
-    # 4. הקדשה
-    current_y += 40 
+    # 4. הקדשה - צמודה לימין וירדה למטה
+    current_y += 50 
     draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=highlight_color, anchor="rt")
 
-    img.save("shabbat_final.jpg")
-    return "shabbat_final.jpg"
-
-def get_random_halachot():
-    with open('halachot.txt', 'r', encoding='utf-8') as f:
-        lines = [line.strip() for line in f if line.strip()]
-    return random.sample(lines, 2)
-
-def send_telegram_message(text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text, 'parse_mode': 'Markdown'})
+    img.save("shabbat_test.jpg")
+    return "shabbat_test.jpg"
 
 def send_photo(image_path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
@@ -116,20 +115,10 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    # קבלת היום בשבוע (0 = שני, 4 = שישי, 6 = ראשון)
-    # הערה: בשרתים לפעמים השבוע מתחיל אחרת, אבל 4 זה תמיד שישי.
-    weekday = datetime.datetime.now().weekday()
-
-    if weekday == 4:
-        # יום שישי - שליחת תמונת זמני שבת
-        parasha, times = get_shabbat_times()
-        path = create_shabbat_image(parasha, times)
-        send_photo(path, "שבת שלום ומבורך! 🕯️🍷")
-    else:
-        # כל יום אחר - שליחת הלכות בלבד
-        h = get_random_halachot()
-        msg = f"🌟 **הלכה יומית** 🌟\n\n1. {h[0]}\n\n2. {h[1]}\n\nיום מבורך! ✨"
-        send_telegram_message(msg)
+    # בטסט אנחנו מריצים ישר את התמונה לערוץ הפרטי שלך
+    parasha, times = get_shabbat_times()
+    path = create_shabbat_image(parasha, times)
+    send_photo(path, "טסט עיצוב: אייקון טלגרם, הקדשה לימין וזהב כהה")
 
 if __name__ == "__main__":
     main()
