@@ -69,12 +69,13 @@ def create_shabbat_image(parasha, times):
         font_logo = font_main_title = font_parasha = font_header = font_text = font_dedication = ImageFont.load_default()
 
     highlight_color = (20, 50, 100) 
-    gold_deep = (184, 134, 11)      # זהב כהה
+    bordeaux_color = (138, 36, 36)  # חום-בורדו יוקרתי
 
-    # 1. לוגו + אייקון טלגרם (פינה שמאלית עליונה)
-    icon_size = 20
-    draw_telegram_icon(draw, 15, 12, icon_size)
-    draw.text((15 + icon_size + 5, 10), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
+    # 1. לוגו + אייקון טלגרם 
+    icon_size = 16 # הוקטן מעט
+    icon_y = 10    # הועלה קצת למעלה
+    draw_telegram_icon(draw, 15, icon_y, icon_size)
+    draw.text((15 + icon_size + 6, icon_y - 2), "2HalahotBeyom", font=font_logo, fill=highlight_color, anchor="lt")
 
     # 2. כותרות - ימין
     right_edge = W - 30 
@@ -86,7 +87,7 @@ def create_shabbat_image(parasha, times):
     title_center_x = (title_bbox[0] + title_bbox[2]) / 2
     
     current_y = top_y + 35
-    draw.text((title_center_x, current_y), f"פרשת {parasha}", font=font_parasha, fill=gold_deep, anchor="mt")
+    draw.text((title_center_x, current_y), f"פרשת {parasha}", font=font_parasha, fill=bordeaux_color, anchor="mt")
 
     # 3. טבלה
     x_city, x_candles, x_havdalah = right_edge, right_edge - 90, right_edge - 170 
@@ -102,9 +103,9 @@ def create_shabbat_image(parasha, times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_text, fill=(40,40,40), anchor="mt")
         current_y += 26 
 
-    # 4. הקדשה - צמודה לימין וירדה למטה
-    current_y += 50 
-    draw.text((right_edge, current_y), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=highlight_color, anchor="rt")
+    # 4. הקדשה - צמודה לימין וירדה עוד למטה
+    current_y += 65 # הוגדל הרווח כדי להוריד את זה משמעותית למטה
+    draw.text((right_edge, current_y), "לעילוי נשמת נופר בן ישועה", font=font_dedication, fill=highlight_color, anchor="rt")
 
     img.save("shabbat_test.jpg")
     return "shabbat_test.jpg"
@@ -115,10 +116,9 @@ def send_photo(image_path, caption):
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
 
 def main():
-    # בטסט אנחנו מריצים ישר את התמונה לערוץ הפרטי שלך
     parasha, times = get_shabbat_times()
     path = create_shabbat_image(parasha, times)
-    send_photo(path, "טסט עיצוב: אייקון טלגרם, הקדשה לימין וזהב כהה")
+    send_photo(path, "טסט עיצוב: פרשה בבורדו, סמל טלגרם הוקטן והועלה, הקדשה למטה ולימין")
 
 if __name__ == "__main__":
     main()
