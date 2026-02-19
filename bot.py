@@ -14,6 +14,15 @@ CITIES = [
     {"name": "באר שבע", "geonameid": "295530"}
 ]
 
+# פונקציה לציור אייקון טלגרם
+def draw_telegram_icon(draw, x, y, size):
+    # עיגול כחול
+    bg_color = (36, 161, 222)
+    draw.ellipse([x, y, x + size, y + size], fill=bg_color)
+    # מטוס נייר לבן
+    p = [(x+size*0.25, y+size*0.5), (x+size*0.75, y+size*0.3), (x+size*0.6, y+size*0.7), (x+size*0.5, y+size*0.55)]
+    draw.polygon(p, fill="white")
+
 def get_shabbat_times():
     today = datetime.date.today()
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
@@ -45,30 +54,37 @@ def create_shabbat_image(times):
     W, H = img.size
 
     try:
-        # פונט השעות נשאר 52
+        # פונט שעות (גודל 52)
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 52) 
-        # פונט ההקדשה הוגדל ב-20% (מ-28 ל-34)
+        # פונט הקדשה ולוגו (גודל 34) - אותו פונט לשניהם
         font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 34) 
     except:
         font_times = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     
-    # --- הגדרות מיקומים ---
-    x_candles = W * 0.68  # הוזז שמאלה (היה 0.72)
-    x_havdalah = W * 0.55 # נשאר במקום המדויק (כי אמרת שזה טוב)
+    # --- 1. ציור לוגו טלגרם בפינה השמאלית העליונה ---
+    logo_x, logo_y = 30, 30
+    icon_size = 34 # גודל האייקון תואם לגובה הטקסט
+    draw_telegram_icon(draw, logo_x, logo_y, icon_size)
+    # ציור הטקסט ליד האייקון באותו פונט של ההקדשה
+    draw.text((logo_x + icon_size + 10, logo_y - 4), "2HalahotBeyom", font=font_dedication, fill=black_color, anchor="lt")
+
+    # --- 2. הגדרות מיקומים לזמנים ---
+    x_candles = W * 0.68  # נשאר ללא שינוי
+    x_havdalah = W * 0.53 # הוזז מעט שמאלה (היה 0.55)
     
-    start_y = H * 0.35    # הועלה קצת למעלה (היה 0.38)
+    start_y = H * 0.35    
     y_spacing = H * 0.08  
 
-    # ציור הזמנים
+    # --- 3. ציור הזמנים ---
     current_y = start_y
     for row in times:
         draw.text((x_candles, current_y), row['candles'], font=font_times, fill=black_color, anchor="mt")
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
-    # ציור ההקדשה
+    # --- 4. ציור ההקדשה (באותו פונט של הלוגו) ---
     draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
 
     final_path = "shabbat_test.jpg"
@@ -83,7 +99,7 @@ def send_photo(image_path, caption):
 def main():
     times = get_shabbat_times()
     path = create_shabbat_image(times)
-    send_photo(path, "טסט על תבנית: כניסה שמאלה, הכל למעלה, הקדשה מוגדלת")
+    send_photo(path, "טסט: יציאה שמאלה, נוסף לוגו טלגרם למעלה")
 
 if __name__ == "__main__":
     main()
