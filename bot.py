@@ -35,33 +35,30 @@ def get_shabbat_times():
     return results
 
 def create_shabbat_image(times):
-    # טעינת התבנית המוכנה שהעלית ל-GitHub
     try:
         img = Image.open("shabbat_template.jpg")
     except Exception as e:
         print(f"שגיאה בטעינת התמונה: {e}")
-        # גיבוי למקרה של תקלה בטעינה
         img = Image.new('RGB', (1200, 800), color='white')
 
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
-    # טעינת פונטים (וודא שהם קיימים בתיקייה)
     try:
-        font_times = ImageFont.truetype("Assistant-Bold.ttf", 35) # גודל לשעות
-        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 28) # גודל להקדשה
+        # הפונט הוגדל ב-50% (מ-35 ל-52)
+        font_times = ImageFont.truetype("Assistant-Bold.ttf", 52) 
+        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 28) 
     except:
         font_times = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     
-    # --- הגדרות מיקומים (כאן משנים כדי להזיז את הטקסט!) ---
-    # המיקומים מחושבים לפי אחוזים מהרוחב/גובה של התמונה שלך
-    x_candles = W * 0.65  # מיקום משוער ימינה-שמאלה לעמודת "כניסה"
-    x_havdalah = W * 0.50 # מיקום משוער ימינה-שמאלה לעמודת "יציאה"
+    # --- הגדרות מיקומים (מעודכן ימינה) ---
+    x_candles = W * 0.72  # זז ימינה (היה 0.65)
+    x_havdalah = W * 0.55 # זז ימינה (היה 0.50)
     
-    start_y = H * 0.38    # גובה התחלתי (לשורה של ירושלים)
-    y_spacing = H * 0.08  # הרווח בין כל שורה של עיר
+    start_y = H * 0.38    
+    y_spacing = H * 0.08  
 
     # ציור הזמנים
     current_y = start_y
@@ -70,7 +67,7 @@ def create_shabbat_image(times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
-    # ציור ההקדשה למטה בצד ימין (צבע שחור תואם לכיתוב הקיים)
+    # ציור ההקדשה
     draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
 
     final_path = "shabbat_test.jpg"
@@ -85,7 +82,7 @@ def send_photo(image_path, caption):
 def main():
     times = get_shabbat_times()
     path = create_shabbat_image(times)
-    send_photo(path, "טסט על תבנית פרשת תרומה")
+    send_photo(path, "טסט על תבנית: שעות מוגדלות ומוזזות ימינה")
 
 if __name__ == "__main__":
     main()
