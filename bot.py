@@ -45,19 +45,20 @@ def create_shabbat_image(times):
     W, H = img.size
 
     try:
-        # הפונט הוגדל ב-50% (מ-35 ל-52)
+        # פונט השעות נשאר 52
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 52) 
-        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 28) 
+        # פונט ההקדשה הוגדל ב-20% (מ-28 ל-34)
+        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 34) 
     except:
         font_times = font_dedication = ImageFont.load_default()
 
     black_color = (0, 0, 0)
     
-    # --- הגדרות מיקומים (מעודכן ימינה) ---
-    x_candles = W * 0.72  # זז ימינה (היה 0.65)
-    x_havdalah = W * 0.55 # זז ימינה (היה 0.50)
+    # --- הגדרות מיקומים ---
+    x_candles = W * 0.68  # הוזז שמאלה (היה 0.72)
+    x_havdalah = W * 0.55 # נשאר במקום המדויק (כי אמרת שזה טוב)
     
-    start_y = H * 0.38    
+    start_y = H * 0.35    # הועלה קצת למעלה (היה 0.38)
     y_spacing = H * 0.08  
 
     # ציור הזמנים
@@ -82,7 +83,7 @@ def send_photo(image_path, caption):
 def main():
     times = get_shabbat_times()
     path = create_shabbat_image(times)
-    send_photo(path, "טסט על תבנית: שעות מוגדלות ומוזזות ימינה")
+    send_photo(path, "טסט על תבנית: כניסה שמאלה, הכל למעלה, הקדשה מוגדלת")
 
 if __name__ == "__main__":
     main()
