@@ -4,9 +4,15 @@ import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
-# --- הגדרות שרת (Production) ---
+# --- הגדרות טלגרם ---
 TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_ID = os.environ.get("CHANNEL_ID")
+
+# --- הגדרות WhatsApp (Green API) ---
+GREEN_API_HOST = "https://7103.api.greenapi.com" 
+GREEN_API_ID = os.environ.get("GREEN_API_ID")
+GREEN_API_TOKEN = os.environ.get("GREEN_API_TOKEN")
+WA_GROUP_ID = os.environ.get("WA_GROUP_ID")
 
 CITIES = [
     {"name": "ירושלים", "geonameid": "281184"},
@@ -15,7 +21,6 @@ CITIES = [
     {"name": "באר שבע", "geonameid": "295530"}
 ]
 
-# פונקציה לציור אייקון טלגרם
 def draw_telegram_icon(draw, x, y, size):
     bg_color = (36, 161, 222)
     draw.ellipse([x, y, x + size, y + size], fill=bg_color)
@@ -61,13 +66,11 @@ def create_shabbat_image(times):
 
     black_color = (0, 0, 0)
     
-    # --- ציור לוגו טלגרם ---
     logo_x, logo_y = 30, 30
     icon_size = 37 
     draw_telegram_icon(draw, logo_x, logo_y, icon_size)
     draw.text((logo_x + icon_size + 10, logo_y - 4), "2HalahotBeyom", font=font_dedication, fill=black_color, anchor="lt")
 
-    # --- ציור זמנים ---
     x_candles = W * 0.68  
     x_havdalah = W * 0.53 
     start_y = H * 0.35    
@@ -79,7 +82,6 @@ def create_shabbat_image(times):
         draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
-    # --- ציור הקדשה ---
     draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
 
     final_path = "shabbat_final.jpg"
@@ -91,36 +93,56 @@ def get_random_halachot():
         lines = [line.strip() for line in f if line.strip()]
     return random.sample(lines, 2)
 
+# --- פונקציות שליחה לטלגרם ---
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text, 'parse_mode': 'Markdown'})
+    requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text})
 
-def send_photo(image_path, caption):
+def send_telegram_photo(image_path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(image_path, 'rb') as f:
         requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
+
+# --- פונקציות שליחה לוואטסאפ ---
+def send_whatsapp_message(text):
+    if not all([GREEN_API_ID, GREEN_API_TOKEN, WA_GROUP_ID]):
+        return
+    url = f"{GREEN_API_HOST}/waInstance{GREEN_API_ID}/sendMessage/{GREEN_API_TOKEN}"
+    payload = {"chatId": WA_GROUP_ID, "message": text}
+    requests.post(url, json=payload)
+
+def send_whatsapp_photo(image_path, caption):
+    if not all([GREEN_API_ID, GREEN_API_TOKEN, WA_GROUP_ID]):
+        return
+    url = f"{GREEN_API_HOST}/waInstance{GREEN_API_ID}/sendFileByUpload/{GREEN_API_TOKEN}"
+    payload = {"chatId": WA_GROUP_ID, "caption": caption}
+    with open(image_path, 'rb') as f:
+        files = {'file': (image_path, f, 'image/jpeg')}
+        requests.post(url, data=payload, files=files)
 
 def main():
     # 0=שני, 1=שלישי, 2=רביעי, 3=חמישי, 4=שישי, 5=שבת, 6=ראשון
     weekday = datetime.datetime.now().weekday()
 
-    # שלב 1: כל יום שהוא לא שבת (5) -> קודם כל שולח הלכות
+    # שליחת הלכות (כל יום חוץ משבת)
     if weekday != 5:
         print("Sending daily halachot...")
         h = get_random_halachot()
-        
-        # העיצוב המעודכן עם אימוג'י הקלף והמספרים הכחולים
         msg = f"2 הלכות יומיות: 📜\n\n1️⃣ {h[0]}\n\n2️⃣ {h[1]}"
         
         send_telegram_message(msg)
+        send_whatsapp_message(msg) # שולח גם לוואטסאפ!
         print("Halachot sent successfully.")
     
-    # שלב 2: אם היום יום שישי (4) -> מיד אחרי ההלכות שולח גם תמונה
+    # שליחת תמונה (רק ביום שישי)
     if weekday == 4:
         print("Today is Friday. Generating and sending Shabbat image...")
         times = get_shabbat_times()
         path = create_shabbat_image(times)
-        send_photo(path, "שבת שלום ומבורך! 🕯️🍷")
+        
+        caption = "שבת שלום ומבורך! 🕯️🍷"
+        send_telegram_photo(path, caption)
+        send_whatsapp_photo(path, caption) # שולח גם לוואטסאפ!
         print("Shabbat image sent successfully.")
 
 if __name__ == "__main__":
