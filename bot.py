@@ -1,149 +1,69 @@
 import os
 import requests
-import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
+import arabic_reshaper
+from bidi.algorithm import get_display
 
-# --- הגדרות טלגרם ---
+def fix_hebrew(text):
+    return get_display(arabic_reshaper.reshape(text))
+
 TOKEN = os.environ.get("BOT_TOKEN")
-CHANNEL_ID = os.environ.get("CHANNEL_ID")
 
-# --- הגדרות WhatsApp (Green API) ---
-GREEN_API_HOST = "https://7103.api.greenapi.com" 
-GREEN_API_ID = os.environ.get("GREEN_API_ID")
-GREEN_API_TOKEN = os.environ.get("GREEN_API_TOKEN")
-WA_GROUP_ID = os.environ.get("WA_GROUP_ID")
+MY_TELEGRAM_ID = "269175916"
 
-CITIES = [
-    {"name": "ירושלים", "geonameid": "281184"},
-    {"name": "תל אביב", "geonameid": "293397"},
-    {"name": "חיפה", "geonameid": "294801"},
-    {"name": "באר שבע", "geonameid": "295530"}
-]
+CITIES = [{"name": "ירושלים", "geonameid": "281184"}, {"name": "תל אביב", "geonameid": "293397"}, 
+          {"name": "חיפה", "geonameid": "294801"}, {"name": "באר שבע", "geonameid": "295530"}]
 
-def draw_telegram_icon(draw, x, y, size):
-    bg_color = (36, 161, 222)
-    draw.ellipse([x, y, x + size, y + size], fill=bg_color)
-    p = [(x+size*0.25, y+size*0.5), (x+size*0.75, y+size*0.3), (x+size*0.6, y+size*0.7), (x+size*0.5, y+size*0.55)]
-    draw.polygon(p, fill="white")
-
-def get_shabbat_times():
+def test_shabbat():
     today = datetime.date.today()
     friday = today + datetime.timedelta((4 - today.weekday()) % 7)
     date_str = friday.strftime("%Y-%m-%d")
-    results = []
+    results, parashah_name = [], ""
+
     for city in CITIES:
         url = f"https://www.hebcal.com/shabbat?cfg=json&geonameid={city['geonameid']}&date={date_str}&M=on"
         try:
-            response = requests.get(url)
-            data = response.json()
-            candles, havdalah = "", ""
+            data = requests.get(url).json()
+            candles = havdalah = ""
             for item in data["items"]:
-                if item["category"] == "candles":
+                if item["category"] == "parashat" and not parashah_name:
+                    parashah_name = item.get("hebrew", item.get("title"))
+                elif item["category"] == "candles":
                     candles = item["title"].split(": ")[1]
                 elif item["category"] == "havdalah":
                     havdalah = item["title"].split(": ")[1]
             results.append({"city": city["name"], "candles": candles, "havdalah": havdalah})
-        except Exception as e:
-            print(f"Error fetching times for {city['name']}: {e}")
-    return results
+        except: pass
+    
+    if not parashah_name: parashah_name = "שבת שלום ומבורך"
 
-def create_shabbat_image(times):
-    try:
-        img = Image.open("shabbat_template.jpg")
-    except Exception as e:
-        print(f"שגיאה בטעינת התמונה: {e}")
-        img = Image.new('RGB', (1200, 800), color='white')
-
+    try: img = Image.open("shabbat_template.jpg")
+    except: img = Image.new('RGB', (1200, 800), color='white')
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
     try:
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 57) 
-        font_dedication = ImageFont.truetype("Shofar-Bold.ttf", 37) 
-    except:
-        font_times = font_dedication = ImageFont.load_default()
+        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 75)
+    except: font_times = font_parashah = ImageFont.load_default()
 
-    black_color = (0, 0, 0)
-    
-    logo_x, logo_y = 30, 30
-    icon_size = 37 
-    draw_telegram_icon(draw, logo_x, logo_y, icon_size)
-    draw.text((logo_x + icon_size + 10, logo_y - 4), "2HalahotBeyom", font=font_dedication, fill=black_color, anchor="lt")
+    # הדפסת שם הפרשה במרכז למעלה
+    draw.text((W / 2, H * 0.15), fix_hebrew(parashah_name), font=font_parashah, fill=(0,0,0), anchor="mm")
 
-    x_candles = W * 0.68  
-    x_havdalah = W * 0.53 
-    start_y = H * 0.35    
-    y_spacing = H * 0.08  
+    current_y = H * 0.35
+    for row in results:
+        draw.text((W * 0.68, current_y), row['candles'], font=font_times, fill=(0,0,0), anchor="mt")
+        draw.text((W * 0.53, current_y), row['havdalah'], font=font_times, fill=(0,0,0), anchor="mt")
+        current_y += H * 0.08
 
-    current_y = start_y
-    for row in times:
-        draw.text((x_candles, current_y), row['candles'], font=font_times, fill=black_color, anchor="mt")
-        draw.text((x_havdalah, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
-        current_y += y_spacing
+    img.save("test_shabbat.jpg")
 
-    draw.text((W - 40, H - 40), "לעילוי נשמת אליהו בן ישועה", font=font_dedication, fill=black_color, anchor="rd")
-
-    final_path = "shabbat_final.jpg"
-    img.save(final_path)
-    return final_path
-
-def get_random_halachot():
-    with open('halachot.txt', 'r', encoding='utf-8') as f:
-        lines = [line.strip() for line in f if line.strip()]
-    return random.sample(lines, 2)
-
-# --- פונקציות שליחה לטלגרם ---
-def send_telegram_message(text):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, json={'chat_id': CHANNEL_ID, 'text': text})
-
-def send_telegram_photo(image_path, caption):
+    # שליחה לטלגרם הפרטי
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-    with open(image_path, 'rb') as f:
-        requests.post(url, data={'chat_id': CHANNEL_ID, 'caption': caption}, files={'photo': f})
-
-# --- פונקציות שליחה לוואטסאפ ---
-def send_whatsapp_message(text):
-    if not all([GREEN_API_ID, GREEN_API_TOKEN, WA_GROUP_ID]):
-        return
-    url = f"{GREEN_API_HOST}/waInstance{GREEN_API_ID}/sendMessage/{GREEN_API_TOKEN}"
-    payload = {"chatId": WA_GROUP_ID, "message": text}
-    requests.post(url, json=payload)
-
-def send_whatsapp_photo(image_path, caption):
-    if not all([GREEN_API_ID, GREEN_API_TOKEN, WA_GROUP_ID]):
-        return
-    url = f"{GREEN_API_HOST}/waInstance{GREEN_API_ID}/sendFileByUpload/{GREEN_API_TOKEN}"
-    payload = {"chatId": WA_GROUP_ID, "caption": caption}
-    with open(image_path, 'rb') as f:
-        files = {'file': (image_path, f, 'image/jpeg')}
-        requests.post(url, data=payload, files=files)
-
-def main():
-    # 0=שני, 1=שלישי, 2=רביעי, 3=חמישי, 4=שישי, 5=שבת, 6=ראשון
-    weekday = datetime.datetime.now().weekday()
-
-    # שליחת הלכות (כל יום חוץ משבת)
-    if weekday != 5:
-        print("Sending daily halachot...")
-        h = get_random_halachot()
-        msg = f"2 הלכות יומיות: 📜\n\n1️⃣ {h[0]}\n\n2️⃣ {h[1]}"
-        
-        send_telegram_message(msg)
-        send_whatsapp_message(msg) # שולח גם לוואטסאפ!
-        print("Halachot sent successfully.")
-    
-    # שליחת תמונה (רק ביום שישי)
-    if weekday == 4:
-        print("Today is Friday. Generating and sending Shabbat image...")
-        times = get_shabbat_times()
-        path = create_shabbat_image(times)
-        
-        caption = "שבת שלום ומבורך! 🕯️🍷"
-        send_telegram_photo(path, caption)
-        send_whatsapp_photo(path, caption) # שולח גם לוואטסאפ!
-        print("Shabbat image sent successfully.")
+    caption = f"טסט פרטי: שבת שלום ומבורך! 🕯️🍷\n*{parashah_name}*"
+    with open("test_shabbat.jpg", 'rb') as f:
+        requests.post(url, data={'chat_id': MY_TELEGRAM_ID, 'caption': caption}, files={'photo': f})
 
 if __name__ == "__main__":
-    main()
+    test_shabbat()
