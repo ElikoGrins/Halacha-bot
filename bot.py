@@ -52,24 +52,29 @@ def test_shabbat():
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
+    # הגדרת צבע חום יוקרתי
+    brown_color = (101, 67, 33)
+    black_color = (0, 0, 0)
+
     try:
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 55) 
-        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 95)
+        # הגדלתי את הפונט ב-10% (מ-95 ל-105)
+        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 105)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # === תיקון עברית + שינוי מיקום פרשה ===
-    # הזזתי ימינה (0.625) ולמעלה (0.215)
-    # והכי חשוב: הורדתי את fix_hebrew כדי שלא יתהפך
-    draw.text((W * 0.625, H * 0.215), parashah_name, font=font_parashah, fill=(0,0,0), anchor="mm")
+    # === מיקום ועיצוב פרשה ===
+    # הזזתי עוד ימינה (0.64) ועוד למעלה (0.195) ושיניתי לצבע חום
+    draw.text((W * 0.64, H * 0.195), parashah_name, font=font_parashah, fill=brown_color, anchor="mm")
 
-    # === שינוי מיקום טבלה ===
-    # העליתי את הטבלה למעלה (0.365)
-    current_y = H * 0.365
-    y_spacing = H * 0.068
+    # === מיקום וריווח טבלה ===
+    # העליתי את כל הטבלה עוד למעלה (0.345)
+    current_y = H * 0.345
+    # הגדלתי טיפה את הרווח בין השורות (0.072)
+    y_spacing = H * 0.072
     
     for row in results:
-        draw.text((W * 0.68, current_y), row['candles'], font=font_times, fill=(0,0,0), anchor="mt")
-        draw.text((W * 0.53, current_y), row['havdalah'], font=font_times, fill=(0,0,0), anchor="mt")
+        draw.text((W * 0.68, current_y), row['candles'], font=font_times, fill=black_color, anchor="mt")
+        draw.text((W * 0.53, current_y), row['havdalah'], font=font_times, fill=black_color, anchor="mt")
         current_y += y_spacing
 
     img.save("test_shabbat.jpg")
