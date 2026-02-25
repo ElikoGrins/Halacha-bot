@@ -53,15 +53,14 @@ def test_shabbat():
     W, H = img.size
 
     # === צבע חום-זהבי עמוק (ברונזה יוקרתי) ===
-    # לקחנו את זה לכיוון חום חם ועשיר
     gold_color = (155, 95, 25) 
-    # מסגרת חום-שוקולד כהה מאוד כדי לתת לזה לבלוט
     gold_outline = (90, 50, 10) 
     black_color = (0, 0, 0)
 
     try:
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 58) 
-        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 105)
+        # === שינוי לפונט סת"ם שהעלית ===
+        font_parashah = ImageFont.truetype("stam.ttf", 105)
     except: font_times = font_parashah = ImageFont.load_default()
 
     # === מיקום ועיצוב הפרשה ===
