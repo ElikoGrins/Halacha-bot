@@ -59,8 +59,8 @@ def test_shabbat():
 
     try:
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 58) 
-        # === שינוי לפונט סת"ם שהעלית ===
-        font_parashah = ImageFont.truetype("stam.ttf", 105)
+        # === הגדלתי את פונט סת"ם מ-105 ל-115 ===
+        font_parashah = ImageFont.truetype("stam.ttf", 115)
     except: font_times = font_parashah = ImageFont.load_default()
 
     # === מיקום ועיצוב הפרשה ===
