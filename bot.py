@@ -2,11 +2,6 @@ import os
 import requests
 import datetime
 from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
-
-def fix_hebrew(text):
-    return get_display(arabic_reshaper.reshape(text))
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -38,8 +33,22 @@ def test_shabbat():
     
     if not parashah_name: parashah_name = "שבת שלום ומבורך"
 
-    try: img = Image.open("shabbat_template.jpg")
-    except: img = Image.new('RGB', (1200, 800), color='white')
+    # מנגנון חכם למציאת התמונה שלך
+    img_path = None
+    possible_names = ["shabbat_template.jpg", "shabbat_template.jpeg", "shabbat_template.JPG", 
+                      "Shabbat_template.jpg", "shabbat_template.png"]
+    
+    for name in possible_names:
+        if os.path.exists(name):
+            img_path = name
+            break
+            
+    if img_path:
+        img = Image.open(img_path)
+    else:
+        print("לא מצאתי את התמונה! מייצר רקע לבן זמני.")
+        img = Image.new('RGB', (1200, 800), color='white')
+
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
@@ -48,8 +57,8 @@ def test_shabbat():
         font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 75)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # הדפסת שם הפרשה במרכז למעלה
-    draw.text((W / 2, H * 0.15), fix_hebrew(parashah_name), font=font_parashah, fill=(0,0,0), anchor="mm")
+    # הדפסת שם הפרשה נקי (בלי פונקציות שהופכות)
+    draw.text((W / 2, H * 0.15), parashah_name, font=font_parashah, fill=(0,0,0), anchor="mm")
 
     current_y = H * 0.35
     for row in results:
@@ -59,7 +68,7 @@ def test_shabbat():
 
     img.save("test_shabbat.jpg")
 
-    # שליחה לטלגרם הפרטי
+    # שליחה לטלגרם הפרטי שלך
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     caption = f"טסט פרטי: שבת שלום ומבורך! 🕯️🍷\n*{parashah_name}*"
     with open("test_shabbat.jpg", 'rb') as f:
