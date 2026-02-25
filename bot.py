@@ -2,12 +2,6 @@ import os
 import requests
 import datetime
 from PIL import Image, ImageDraw, ImageFont
-import arabic_reshaper
-from bidi.algorithm import get_display
-
-def fix_hebrew(text):
-    reshaped_text = arabic_reshaper.reshape(text)
-    return get_display(reshaped_text)
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -60,15 +54,17 @@ def test_shabbat():
 
     try:
         font_times = ImageFont.truetype("Assistant-Bold.ttf", 55) 
-        # הגדלתי את הפונט של הפרשה ל-95
         font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 95)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # מרכזתי את הפרשה מבחינת אופקית (X=0.605) ואנכית (Y=0.235) מתחת לכותרות
-    draw.text((W * 0.605, H * 0.235), fix_hebrew(parashah_name), font=font_parashah, fill=(0,0,0), anchor="mm")
+    # === תיקון עברית + שינוי מיקום פרשה ===
+    # הזזתי ימינה (0.625) ולמעלה (0.215)
+    # והכי חשוב: הורדתי את fix_hebrew כדי שלא יתהפך
+    draw.text((W * 0.625, H * 0.215), parashah_name, font=font_parashah, fill=(0,0,0), anchor="mm")
 
-    # הורדתי קצת את השורה הראשונה (0.385) וצמצמתי מרווחים בין השורות (0.068)
-    current_y = H * 0.385
+    # === שינוי מיקום טבלה ===
+    # העליתי את הטבלה למעלה (0.365)
+    current_y = H * 0.365
     y_spacing = H * 0.068
     
     for row in results:
