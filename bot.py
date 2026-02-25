@@ -52,11 +52,11 @@ def test_shabbat():
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
-    # === צבע זהב עתיק ויוקרתי ===
-    # צבע עשיר יותר שנוטה לחום/כתום
-    gold_color = (184, 134, 11) 
-    # מסגרת כהה ועמוקה להדגשה
-    gold_outline = (101, 67, 33) 
+    # === צבע חום-זהבי עמוק (ברונזה יוקרתי) ===
+    # לקחנו את זה לכיוון חום חם ועשיר
+    gold_color = (155, 95, 25) 
+    # מסגרת חום-שוקולד כהה מאוד כדי לתת לזה לבלוט
+    gold_outline = (90, 50, 10) 
     black_color = (0, 0, 0)
 
     try:
@@ -64,10 +64,10 @@ def test_shabbat():
         font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 105)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # === מיקום ועיצוב הפרשה (ללא שינוי במיקום) ===
+    # === מיקום ועיצוב הפרשה ===
     draw.text((W * 0.69, H * 0.195), parashah_name, font=font_parashah, fill=gold_color, anchor="mm", stroke_width=4, stroke_fill=gold_outline)
 
-    # === מיקום וריווח הטבלה (ללא שינוי) ===
+    # === מיקום וריווח הטבלה ===
     current_y = H * 0.33
     y_spacing = H * 0.075
     
