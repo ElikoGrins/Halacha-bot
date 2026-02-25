@@ -52,23 +52,25 @@ def test_shabbat():
     draw = ImageDraw.Draw(img)
     W, H = img.size
 
-    # צבע חום יוקרתי לפרשה
-    brown_color = (101, 67, 33)
+    # הגדרת צבעי זהב לפרשה
+    gold_color = (255, 223, 0) # זהב בהיר וזוהר
+    gold_outline = (184, 134, 11) # זהב כהה למסגרת (נותן את ההדגשה)
     black_color = (0, 0, 0)
 
     try:
-        font_times = ImageFont.truetype("Assistant-Bold.ttf", 55) 
+        # הגדלתי טיפה את פונט השעות (ל-58)
+        font_times = ImageFont.truetype("Assistant-Bold.ttf", 58) 
         font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 105)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # === מיקום הפרשה ===
-    # הזזתי ימינה (מ-0.64 ל-0.66)
-    draw.text((W * 0.66, H * 0.195), parashah_name, font=font_parashah, fill=brown_color, anchor="mm")
+    # === מיקום ועיצוב הפרשה ===
+    # הוספתי stroke_width ו-stroke_fill כדי ליצור את אפקט הזוהר/ההדגשה
+    draw.text((W * 0.66, H * 0.195), parashah_name, font=font_parashah, fill=gold_color, anchor="mm", stroke_width=4, stroke_fill=gold_outline)
 
-    # === מיקום הטבלה ===
-    # העליתי את כל הטבלה למעלה (מ-0.345 ל-0.33)
+    # === מיקום וריווח הטבלה ===
     current_y = H * 0.33
-    y_spacing = H * 0.072
+    # הגדלתי טיפה את המרווח בגלל שהגדלנו את הפונט (0.075)
+    y_spacing = H * 0.075
     
     for row in results:
         draw.text((W * 0.68, current_y), row['candles'], font=font_times, fill=black_color, anchor="mt")
