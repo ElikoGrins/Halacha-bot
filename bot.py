@@ -2,6 +2,12 @@ import os
 import requests
 import datetime
 from PIL import Image, ImageDraw, ImageFont
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+def fix_hebrew(text):
+    reshaped_text = arabic_reshaper.reshape(text)
+    return get_display(reshaped_text)
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
@@ -33,7 +39,7 @@ def test_shabbat():
     
     if not parashah_name: parashah_name = "שבת שלום ומבורך"
 
-    # מנגנון חכם למציאת התמונה שלך
+    # מציאת התמונה שלך
     img_path = None
     possible_names = ["shabbat_template.jpg", "shabbat_template.jpeg", "shabbat_template.JPG", 
                       "Shabbat_template.jpg", "shabbat_template.png"]
@@ -53,22 +59,25 @@ def test_shabbat():
     W, H = img.size
 
     try:
-        font_times = ImageFont.truetype("Assistant-Bold.ttf", 57) 
-        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 75)
+        font_times = ImageFont.truetype("Assistant-Bold.ttf", 55) 
+        # הגדלתי את הפונט של הפרשה ל-95
+        font_parashah = ImageFont.truetype("Shofar-Bold.ttf", 95)
     except: font_times = font_parashah = ImageFont.load_default()
 
-    # הדפסת שם הפרשה נקי (בלי פונקציות שהופכות)
-    draw.text((W / 2, H * 0.15), parashah_name, font=font_parashah, fill=(0,0,0), anchor="mm")
+    # מרכזתי את הפרשה מבחינת אופקית (X=0.605) ואנכית (Y=0.235) מתחת לכותרות
+    draw.text((W * 0.605, H * 0.235), fix_hebrew(parashah_name), font=font_parashah, fill=(0,0,0), anchor="mm")
 
-    current_y = H * 0.35
+    # הורדתי קצת את השורה הראשונה (0.385) וצמצמתי מרווחים בין השורות (0.068)
+    current_y = H * 0.385
+    y_spacing = H * 0.068
+    
     for row in results:
         draw.text((W * 0.68, current_y), row['candles'], font=font_times, fill=(0,0,0), anchor="mt")
         draw.text((W * 0.53, current_y), row['havdalah'], font=font_times, fill=(0,0,0), anchor="mt")
-        current_y += H * 0.08
+        current_y += y_spacing
 
     img.save("test_shabbat.jpg")
 
-    # שליחה לטלגרם הפרטי שלך
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     caption = f"טסט פרטי: שבת שלום ומבורך! 🕯️🍷\n*{parashah_name}*"
     with open("test_shabbat.jpg", 'rb') as f:
