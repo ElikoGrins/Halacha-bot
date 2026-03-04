@@ -1,6 +1,5 @@
 import os
 import requests
-import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 
@@ -102,10 +101,30 @@ def create_shabbat_image(times, parashah_name):
     img.save(final_path)
     return final_path
 
-def get_random_halachot():
+# --- פונקציה שהוחלפה: משיכת הלכות לפי הסדר במקום רנדומלי ---
+def get_sequential_halachot():
     with open('halachot.txt', 'r', encoding='utf-8') as f:
         lines = [line.strip() for line in f if line.strip()]
-    return random.sample(lines, 2)
+        
+    if len(lines) < 2:
+        return ["אין מספיק הלכות בקובץ", ""]
+
+    start_date = datetime.date(2024, 1, 1) 
+    today = datetime.date.today()
+    
+    days_passed = 0
+    current_date = start_date
+    while current_date < today:
+        if current_date.weekday() != 5: 
+            days_passed += 1
+        current_date += datetime.timedelta(days=1)
+        
+    index = (days_passed * 2) % len(lines)
+    
+    h1 = lines[index]
+    h2 = lines[(index + 1) % len(lines)] 
+    
+    return [h1, h2]
 
 # --- פונקציות שליחה לטלגרם ---
 def send_telegram_message(text):
@@ -141,7 +160,8 @@ def main():
     # שליחת הלכות (כל יום חוץ משבת)
     if weekday != 5:
         print("Sending daily halachot...")
-        h = get_random_halachot()
+        # שינוי הקריאה לפונקציה שעובדת לפי הסדר
+        h = get_sequential_halachot() 
         msg = f"2 הלכות יומיות: 📜\n\n1️⃣ {h[0]}\n\n2️⃣ {h[1]}"
         
         send_telegram_message(msg)
