@@ -109,7 +109,7 @@ def get_sequential_halachot():
     if len(lines) < 2:
         return ["אין מספיק הלכות בקובץ", ""]
 
-    start_date = datetime.date(2024, 1, 1) 
+    start_date = datetime.date(2026, 3, 6) 
     today = datetime.date.today()
     
     days_passed = 0
