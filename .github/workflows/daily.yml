@@ -1,4 +1,4 @@
-name: Daily Halacha Bot
+Name: Daily Halacha Bot
 
 on:
   workflow_dispatch:
@@ -7,6 +7,8 @@ on:
     - cron: '25 5 * * 0,1,2,3,4'
     # יום שישי: 07:30 בבוקר
     - cron: '30 5 * * 5'
+    # כל ערב: 20:45 שעון ישראל (17:45 UTC) עבור ספירת העומר
+    - cron: '45 17 * * *'
 
 jobs:
   build:
