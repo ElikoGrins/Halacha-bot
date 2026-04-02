@@ -1,4 +1,4 @@
-Name: Daily Halacha Bot
+name: Daily Halacha Bot
 
 on:
   workflow_dispatch:
